@@ -1,1 +1,36 @@
-ok so, here o sa mai adaug informatii despre proiect si toate chestiile
+aici o sa pun informatiile despre proiect
+
+We will call this language "Il Maestro".
+The Concept: "Il Maestro" 🇮🇹🎵
+
+The language is designed around an Italian Opera.
+
+    The Program is a performance.
+
+    Classes are opera (Operas).
+
+    Functions are aria (Solos/Songs).
+
+    The Main Block is the finale (The Grand Finale).
+
+    Output (Print) is canta (Sing).
+
+The Data Types (The Voices):
+
+    int → basso (The deep, solid integer numbers).
+
+    float → soprano (The high, floating notes).
+
+    string → libretto (The text/script).
+
+    bool → verita (The truth).
+
+    void → silenzio (Silence/Void).
+
+The Logic:
+
+    if → se
+
+    while → durante (During)
+
+    true / false → vero / falso
