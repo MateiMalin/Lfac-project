@@ -34,3 +34,7 @@ The Logic:
     while → durante (During)
 
     true / false → vero / falso
+
+Structura : 
+Lexer (mastro.l)-> transforms the inputs into tokens that can be recognised
+The Parser (maestro.y)->the structure, constraint checks 
