@@ -1,22 +1,25 @@
-// aici o sa ii dam inputul si el le transforma in tokenuri ca sa le recunoasca
-//so basically asta e un dictionar
+/* aici o sa ii dam inputul si el le transforma in tokenuri ca sa le recunoasca so basically asta e un dictionar */
 
 %{
-#include <iostream>
-#include <string>
-#include <maestro.tab.h> //ceva fisier generat de bison
-using namespace std;
+#include <stdio.h>
+#include <stdlib.h>
+#include "maestro.tab.h" /* header generat de bison */
 %}
 
-//aici o sa fie cod de c care se compileaza direct
-//maesto.tab.h o sa fie headerul care contine codurile pentru tokenuri, ca sa stie ce sa returneze pentru parser
+/* aici o sa fie cod de C care se compileaza direct maestro.tab.h o sa fie headerul care contine codurile pentru tokenuri, ca sa stie ce sa returneze pentru parser */
 
-%option noyywrap //citim dintr-un singur fisier
-%option yylineno //retinem numarul liniei ca sa putem afisa erori and all that
+%option noyywrap
+%option yylineno
 
-//aici o sa fie the keywords
-
+/* aici o sa fie the keywords */
+%x COMMENT
 %%
+
+"/*"            { BEGIN(COMMENT); }   /* Start comment mode */
+<COMMENT>"*/"   { BEGIN(INITIAL); }   /* End comment mode */
+<COMMENT>\n     { ; }                 /* Ignore newlines in comments */
+<COMMENT>.      { ; }                 /* Ignore everything else in comments */
+"//".* { ; }                 /* Ignore single line comments */
 
 "basso"    {return TOK_TYPE_INT;}
 "soprano"  {return TOK_TYPE_FLOAT;}
@@ -24,7 +27,6 @@ using namespace std;
 "verita"   {return TOK_TYPE_BOOL;}
 "silenzio" {return TOK_TYPE_VOID;}
 
-// structure keywords
 
 "opera"     {return TOK_CLASS;}
 "finale"    {return TOK_MAIN;}
@@ -35,13 +37,18 @@ using namespace std;
 "vero"      {return TOK_TRUE;}
 "falso"     {return TOK_FALSE;}
 
-[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } //asta pentru numele la variabile
-[0-9]+                 { return LIT_INT; }
-[0-9]+\.[0-9]+         { return LIT_FLOAT; }
-\"[^"\n]*\"            {return LIT_STRING;}
+[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } /* asta pentru numele la variabile */
+([0-9]+\.[0-9]+)      { return LIT_FLOAT; }
+([0-9]+)               { return LIT_INT; }
+\" { /* manual string read: consume until closing quote or newline */ 
+	int c; 
+	while ((c = fgetc(yyin)) != EOF) { 
+		if (c == '\n') { fprintf(stderr, "Unterminated string at line %d\n", yylineno); exit(1); }
+		if (c == '"') break; 
+	}
+	return LIT_STRING; }
 
-// fiecare operator in parte
-":="        {return TOK_ASSIGN:}
+":="        { return TOK_ASSIGN; }
 "=="        {return TOK_EQ;}
 "!="        {return TOK_NEQ;}
 "<="        {return TOK_LEQ;}
@@ -53,11 +60,9 @@ using namespace std;
 "+="        { return TOK_PLUS_ASSIGN; }  
 
 
-[+\-*/<>;,(){}.] { return yytext[0]; }
-//yytext o sa fie un char * cu mathced lexeme si o sa dea return fix la caracterul ala
+[+\-*/<>;,(){}.] { return yytext[0]; } /* yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
 
-[\t\r\n]+ ;//ignoram tot ce tine de formatare
+[ \t\r\n]+ ; /* ignoram whitespace */
 
-. {cerr <<"Eroare Lessicale line"<< yylineno << ": "<<yytext <<endl; exit(1);}
-// daca o sa avem orice caracter pe care nu il recunoastem, ii dam o eroare
+. { fprintf(stderr, "Eroare lexica linia %d: %s\n", yylineno, yytext); exit(1); } /* daca o sa avem orice caracter pe care nu il recunoastem, ii dam o eroare */
 %%

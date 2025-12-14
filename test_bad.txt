@@ -1,0 +1,13 @@
+finale {
+    basso i;
+    i := 0;
+    
+    se (i == 0) {
+        canta("Errore in arrivo...");
+        
+        /* ERROR: Variable declaration inside an IF block */
+        basso errore; 
+        
+        errore := 1;
+    }
+}

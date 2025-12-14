@@ -3,12 +3,11 @@
 //sau in finale block
 
 %{
-#include <iostream>
-#include <cstdlib>
-using namespace std;
+#include <stdio.h>
+#include <stdlib.h>
 
 extern int yylineno;
-int yylex();
+int yylex(void);
 void yyerror(const char *s);
 
 %}
@@ -28,23 +27,30 @@ void yyerror(const char *s);
 %left '<' '>' TOK_LEQ TOK_GEQ
 %left '+' '-'
 %left '*' '/'
-%nonassoc UMINUS //adica cand avem -a 
+%nonassoc UMINUS
 
 %%
 //structura programului
 
 program:
     global_elements finale_block
-    {cout << "Sintassi Corretta! (Syntax Correct!)" <<endl;}
+    { printf("Sintassi Corretta! (Syntax Correct!)\n"); }
     ;
 
 global_elements:
-    global_elements global decl
-    | /* nimic*/
+    global_elements global_decl
+    | /* nimic */
     ;
 
-global decl:
-    class_decl|func_decl|var_decl
+global_decl:
+    class_decl
+    | return_type TOK_ID global_decl_suffix
+    | data_type TOK_ID global_decl_suffix /* allow data_type (including TOK_ID) as return type */
+    ;
+
+global_decl_suffix:
+    '(' param_list ')' '{' func_body '}'
+    | var_decl_suffix
     ;
 
 //data types & classes
@@ -60,27 +66,39 @@ class_decl:
 
 class_body:
     class_body class_member
-    |
+    | /* empty */
     ;
 
 class_member:
-    var_decl
-    | func_decl
+    return_type TOK_ID class_member_suffix
+    ;
+
+return_type:
+    data_type
+    | TOK_TYPE_VOID
+    ;
+
+class_member_suffix:
+    ';' /* field */
+    | '(' param_list ')' '{' func_body '}' /* method */
     ;
 
 //functions
 
-func_decl:
-return_type TOK_ID '(' param_list ')' '{' func_body '}'
-;
+/* functions keep return_type for explicit void */
+/* return_type was folded into data_type for function declarations; remove unused nonterminal */
 
-return type:
-data_type | TOK_TYPE_VOID
-;
+simple_type:
+    TOK_TYPE_INT
+    | TOK_TYPE_FLOAT
+    | TOK_TYPE_STRING
+    | TOK_TYPE_BOOL
+    ;
 
 param_list:
-non_empty_params | 
-;
+    non_empty_params
+    | /* empty */
+    ;
 
 non_empty_params:
 non_empty_params ',' data_type TOK_ID
@@ -97,20 +115,26 @@ var_decl_list:
     ;
 
 var_decl:
-    data_type TOK_ID ';'
-    | data_type TOK_ID TOK_ASSIGN expression ';'
+    simple_type TOK_ID var_decl_suffix
+    ;
+
+var_decl_suffix:
+    ';'
+    | TOK_ASSIGN expression ';'
+    | TOK_PLUS_ASSIGN expression ';'
     ;
 
 //main block
 
 finale_block:
-TOK_MAIN '{' stmt_list_pure '}'
-;
+    TOK_MAIN '{' stmt_list_pure '}'
+    ;
 
 //statements
 
-stmt_list_pure;
-    stmt_list_pure |
+stmt_list_pure:
+    stmt_list_pure statement
+    | /* empty */
     ;
 
 statement:
@@ -161,10 +185,14 @@ expression:
     | expression '/' expression
     | expression '<' expression
     | expression '>' expression
+    | expression TOK_LEQ expression
+    | expression TOK_GEQ expression
     | expression TOK_EQ expression
+    | expression TOK_NEQ expression
     | expression TOK_AND expression
     | expression TOK_OR expression
     | '(' expression ')'
+    | '-' expression %prec UMINUS
     | func_call
     | lvalue
     | literal
@@ -196,7 +224,7 @@ literal:
 %%
 
 void yyerror(const char *s) {
-    cerr << "Errore di Sintassi line " << yylineno << ": " << s << endl;
+    fprintf(stderr, "Errore di Sintassi line %d: %s\n", yylineno, s);
     exit(1);
 }
 

@@ -1,0 +1,38 @@
+basso counter;
+soprano prezzo;
+
+opera LaTraviata {
+    basso atti;
+    
+    silenzio cantaAria() {
+        basso note;
+        note := 7;
+        canta(note);
+    }
+}
+
+silenzio preparaScena() {
+    basso luci;
+    luci := 1;
+    canta("Luci accese!");
+}
+
+finale {
+    counter := 0;
+    prezzo := 10.50;
+    
+    canta("Inizia lo spettacolo...");
+    
+    durante (counter < 5) {
+        canta(counter);
+        
+        counter++;       
+        counter += 1;
+        
+        se (counter == 4) {
+            canta("Quasi finito!");
+        }
+    }
+    
+    canta("Applausi!");
+}
