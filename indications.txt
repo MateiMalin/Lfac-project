@@ -1,8 +1,5 @@
 aici o sa pun informatiile despre proiect
 
-We will call this language "Il Maestro".
-The Concept: "Il Maestro" 🇮🇹🎵
-
 The language is designed around an Italian Opera.
 
     The Program is a performance.
