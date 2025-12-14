@@ -36,28 +36,24 @@ program:
     ;
 
 global_elements:
-    global_elements global_decl
-    | /* nimic */
+    global_elements global_decl |
     ;
 
 global_decl:
-    class_decl
-    | return_type TOK_ID global_decl_suffix
+    class_decl| return_type TOK_ID global_decl_suffix
     ;
 
 global_decl_suffix:
-    '(' param_list ')' '{' func_body '}'   /* Function definition */
-    | var_decl_suffix                      /* Global variable */
+    '(' param_list ')' '{' func_body '}' | var_decl_suffix                      
     ;
 
-//data types & classes
+//data types si clasele
 
 data_type:
-    TOK_TYPE_INT | TOK_TYPE_FLOAT | TOK_TYPE_STRING | TOK_TYPE_BOOL 
-    | TOK_ID /* Objects */
+    TOK_TYPE_INT | TOK_TYPE_FLOAT | TOK_TYPE_STRING | TOK_TYPE_BOOL | TOK_ID 
     ;
 
-/* primitive types for local variable declarations (disambiguation) */
+
 simple_type:
     TOK_TYPE_INT
     | TOK_TYPE_FLOAT
@@ -70,8 +66,7 @@ class_decl:
     ;
 
 class_body:
-    class_body class_member
-    | /* empty */
+    class_body class_member| 
     ;
 
 class_member:
@@ -79,25 +74,21 @@ class_member:
     ;
 
 return_type:
-    data_type
-    | TOK_TYPE_VOID
+    data_type| TOK_TYPE_VOID
     ;
 
 class_member_suffix:
-    ';' /* field */
-    | '(' param_list ')' '{' func_body '}' /* method */
+    ';'| '(' param_list ')' '{' func_body '}' 
     ;
 
-//functions
+//functi
 
 param_list:
-    non_empty_params
-    | /* empty */
+    non_empty_params|
     ;
 
 non_empty_params:
-    non_empty_params ',' data_type TOK_ID
-    | data_type TOK_ID
+    non_empty_params ',' data_type TOK_ID| data_type TOK_ID
     ;
 
 func_body:
@@ -105,21 +96,19 @@ func_body:
     ;
 
 var_decl_list:
-    var_decl_list var_decl
-    | /* empty */
+    var_decl_list var_decl|
     ;
 
 var_decl:
     simple_type TOK_ID var_decl_suffix
     ;
 
+
 var_decl_suffix:
-    ';'
-    | TOK_ASSIGN expression ';'
-    | TOK_PLUS_ASSIGN expression ';'
+    ';'| TOK_ASSIGN expression ';'| TOK_PLUS_ASSIGN expression ';'
     ;
 
-//main block
+//blocul main (ala cu grand finale )
 
 finale_block:
     TOK_MAIN '{' stmt_list_pure '}'
@@ -128,8 +117,7 @@ finale_block:
 //statements
 
 stmt_list_pure:
-    stmt_list_pure statement
-    | /* empty */
+    stmt_list_pure statement| 
     ;
 
 statement:
@@ -155,8 +143,7 @@ print_stmt:
     ;
 
 control_stmt:
-    if_stmt
-    | while_stmt
+    if_stmt| while_stmt
     ;
 
 if_stmt:
@@ -194,22 +181,19 @@ expression:
     ;
 
 lvalue:
-    TOK_ID
-    | TOK_ID '.' TOK_ID
+    TOK_ID| TOK_ID '.' TOK_ID
     ;
 
 func_call:
-    TOK_ID '(' args_list ')'
-    | TOK_ID '.' TOK_ID '(' args_list ')'
+    TOK_ID '(' args_list ')'| TOK_ID '.' TOK_ID '(' args_list ')'
     ;
 
 args_list:
-    non_empty_args | /* empty */
+    non_empty_args |
     ;
 
 non_empty_args:
-    non_empty_args ',' expression
-    | expression
+    non_empty_args ',' expression| expression
     ;
 
 literal:

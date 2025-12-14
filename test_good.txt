@@ -16,7 +16,7 @@ silenzio preparaScena() {
     luci := 1;
     canta("Luci accese!");
 }
-
+    
 finale {
     counter := 0;
     prezzo := 10.50;

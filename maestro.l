@@ -6,7 +6,6 @@
 #include "maestro.tab.h" /* header generat de bison */
 %}
 
-/* aici o sa fie cod de C care se compileaza direct maestro.tab.h o sa fie headerul care contine codurile pentru tokenuri, ca sa stie ce sa returneze pentru parser */
 
 %option noyywrap
 %option yylineno
@@ -15,11 +14,11 @@
 %x COMMENT
 %%
 
-"/*"            { BEGIN(COMMENT); }   /* Start comment mode */
-<COMMENT>"*/"   { BEGIN(INITIAL); }   /* End comment mode */
-<COMMENT>\n     { ; }                 /* Ignore newlines in comments */
-<COMMENT>.      { ; }                 /* Ignore everything else in comments */
-"//".* { ; }                 /* Ignore single line comments */
+"/*"            { BEGIN(COMMENT); }   
+<COMMENT>"*/"   { BEGIN(INITIAL); }   
+<COMMENT>\n     { ; }                 
+<COMMENT>.      { ; }                 
+"//".* { ; }
 
 "basso"    {return TOK_TYPE_INT;}
 "soprano"  {return TOK_TYPE_FLOAT;}
@@ -37,7 +36,7 @@
 "vero"      {return TOK_TRUE;}
 "falso"     {return TOK_FALSE;}
 
-[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } /* asta pentru numele la variabile */
+[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } // asta pentru numele la variabile */
 ([0-9]+\.[0-9]+)      { return LIT_FLOAT; }
 ([0-9]+)               { return LIT_INT; }
 \"[^"\n]*\"           { return LIT_STRING; } /* manual string read removed for safety */
@@ -54,7 +53,7 @@
 "+="        { return TOK_PLUS_ASSIGN; }  
 
 
-[+\-*/<>;,(){}.] { return yytext[0]; } /* yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
+[+\-*/<>;,(){}.] { return yytext[0]; } /*yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
 
 [ \t\r\n]+ ; /* ignoram whitespace */
 

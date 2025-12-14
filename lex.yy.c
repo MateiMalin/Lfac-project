@@ -1,6 +1,5 @@
-#line 2 "lex.yy.c"
 
-#line 4 "lex.yy.c"
+#line 3 "lex.yy.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -543,11 +542,10 @@ char *yytext;
 #include <stdio.h>
 #include <stdlib.h>
 #include "maestro.tab.h" /* header generat de bison */
-#line 547 "lex.yy.c"
-/* aici o sa fie cod de C care se compileaza direct maestro.tab.h o sa fie headerul care contine codurile pentru tokenuri, ca sa stie ce sa returneze pentru parser */
+#line 546 "lex.yy.c"
 /* aici o sa fie the keywords */
 
-#line 551 "lex.yy.c"
+#line 549 "lex.yy.c"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -765,10 +763,10 @@ YY_DECL
 		}
 
 	{
-#line 16 "maestro.l"
+#line 15 "maestro.l"
 
 
-#line 772 "lex.yy.c"
+#line 770 "lex.yy.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -837,182 +835,182 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 18 "maestro.l"
-{ BEGIN(COMMENT); }   /* Start comment mode */
+#line 17 "maestro.l"
+{ BEGIN(COMMENT); }   
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 19 "maestro.l"
-{ BEGIN(INITIAL); }   /* End comment mode */
+#line 18 "maestro.l"
+{ BEGIN(INITIAL); }   
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 20 "maestro.l"
-{ ; }                 /* Ignore newlines in comments */
+#line 19 "maestro.l"
+{ ; }                 
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 21 "maestro.l"
-{ ; }                 /* Ignore everything else in comments */
+#line 20 "maestro.l"
+{ ; }                 
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 22 "maestro.l"
-{ ; }                 /* Ignore single line comments */
+#line 21 "maestro.l"
+{ ; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 24 "maestro.l"
+#line 23 "maestro.l"
 {return TOK_TYPE_INT;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 25 "maestro.l"
+#line 24 "maestro.l"
 {return TOK_TYPE_FLOAT;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 26 "maestro.l"
+#line 25 "maestro.l"
 {return TOK_TYPE_STRING;}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 27 "maestro.l"
+#line 26 "maestro.l"
 {return TOK_TYPE_BOOL;}
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 28 "maestro.l"
+#line 27 "maestro.l"
 {return TOK_TYPE_VOID;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 31 "maestro.l"
+#line 30 "maestro.l"
 {return TOK_CLASS;}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 32 "maestro.l"
+#line 31 "maestro.l"
 {return TOK_MAIN;}
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 33 "maestro.l"
+#line 32 "maestro.l"
 {return TOK_IF;}
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 34 "maestro.l"
+#line 33 "maestro.l"
 {return TOK_WHILE;}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 35 "maestro.l"
+#line 34 "maestro.l"
 {return TOK_PRINT;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 37 "maestro.l"
+#line 36 "maestro.l"
 {return TOK_TRUE;}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 38 "maestro.l"
+#line 37 "maestro.l"
 {return TOK_FALSE;}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 40 "maestro.l"
-{ return TOK_ID; } /* asta pentru numele la variabile */
+#line 39 "maestro.l"
+{ return TOK_ID; } // asta pentru numele la variabile */
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 41 "maestro.l"
+#line 40 "maestro.l"
 { return LIT_FLOAT; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 42 "maestro.l"
+#line 41 "maestro.l"
 { return LIT_INT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 43 "maestro.l"
+#line 42 "maestro.l"
 { return LIT_STRING; } /* manual string read removed for safety */
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 45 "maestro.l"
+#line 44 "maestro.l"
 { return TOK_ASSIGN; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 46 "maestro.l"
+#line 45 "maestro.l"
 {return TOK_EQ;}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 47 "maestro.l"
+#line 46 "maestro.l"
 {return TOK_NEQ;}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 48 "maestro.l"
+#line 47 "maestro.l"
 {return TOK_LEQ;}
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 49 "maestro.l"
+#line 48 "maestro.l"
 {return TOK_GEQ;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 50 "maestro.l"
+#line 49 "maestro.l"
 {return TOK_AND;}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 51 "maestro.l"
+#line 50 "maestro.l"
 {return TOK_OR;}
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 52 "maestro.l"
+#line 51 "maestro.l"
 { return TOK_INC; }          
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 53 "maestro.l"
+#line 52 "maestro.l"
 { return TOK_DEC; }          
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 54 "maestro.l"
+#line 53 "maestro.l"
 { return TOK_PLUS_ASSIGN; }  
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 57 "maestro.l"
-{ return yytext[0]; } /* yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
+#line 56 "maestro.l"
+{ return yytext[0]; } /*yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
 	YY_BREAK
 case 33:
 /* rule 33 can match eol */
 YY_RULE_SETUP
-#line 59 "maestro.l"
+#line 58 "maestro.l"
 ; /* ignoram whitespace */
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 61 "maestro.l"
+#line 60 "maestro.l"
 { fprintf(stderr, "Eroare lexica linia %d: %s\n", yylineno, yytext); exit(1); } /* daca o sa avem orice caracter pe care nu il recunoastem, ii dam o eroare */
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 62 "maestro.l"
+#line 61 "maestro.l"
 ECHO;
 	YY_BREAK
-#line 1016 "lex.yy.c"
+#line 1014 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(COMMENT):
 	yyterminate();
@@ -2030,5 +2028,5 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 62 "maestro.l"
+#line 61 "maestro.l"
 
