@@ -14,6 +14,8 @@ using namespace std;
 
 //aici o sa fie the keywords
 
+%%
+
 "basso"    {return TOK_TYPE_INT;}
 "soprano"  {return TOK_TYPE_FLOAT;}
 "libretto" {return TOK_TYPE_STRING;}
@@ -31,7 +33,26 @@ using namespace std;
 "vero" {return TOK_TRUE;}
 "falso" {return TOK_FALSE;}
 
-[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; }
+[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } //asta pentru numele la variabile
 [0-9]+                  { return LIT_INT; }
 [0-9]+\.[0-9]+          { return LIT_FLOAT; }
+\"[^"\n]*\" {return LIT_STRING;}
 
+//fiecare operator in parte
+":="  {return TOK_ASSIGN:}
+"==" {return TOK_EQ;}
+"!=" {return TOK_NEQ;}
+"<=" {return TOK_LEQ;}
+">=" {return TOK_GEQ;}
+"&&" {return TOK_AND;}
+"||" {return TOK_OR;}
+
+
+[+\-*/<>;,(){}.] { return yytext[0]; }
+//yytext o sa fie un char * cu mathced lexeme si o sa dea return fix la caracterul ala
+
+[\t\r\n]+ ;//ignoram tot ce tine de formatare
+
+. {cerr <<"Eroare Lessicale line"<< yylineno << ": "<<yytext <<endl; exit(1);}
+// daca o sa avem orice caracter pe care nu il recunoastem, ii dam o eroare
+%%
