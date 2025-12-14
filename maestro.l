@@ -40,13 +40,7 @@
 [a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } /* asta pentru numele la variabile */
 ([0-9]+\.[0-9]+)      { return LIT_FLOAT; }
 ([0-9]+)               { return LIT_INT; }
-\" { /* manual string read: consume until closing quote or newline */ 
-	int c; 
-	while ((c = fgetc(yyin)) != EOF) { 
-		if (c == '\n') { fprintf(stderr, "Unterminated string at line %d\n", yylineno); exit(1); }
-		if (c == '"') break; 
-	}
-	return LIT_STRING; }
+\"[^"\n]*\"           { return LIT_STRING; } /* manual string read removed for safety */
 
 ":="        { return TOK_ASSIGN; }
 "=="        {return TOK_EQ;}

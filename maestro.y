@@ -1,6 +1,4 @@
 //asta o sa fie parserul, cu regulile de gramatica
-//spre exemplu, ca variabilele nu pot fi declarate in if/while
-//sau in finale block
 
 %{
 #include <stdio.h>
@@ -20,7 +18,7 @@ void yyerror(const char *s);
 %token TOK_ASSIGN TOK_EQ TOK_NEQ TOK_LEQ TOK_GEQ TOK_AND TOK_OR
 %token TOK_INC TOK_DEC TOK_PLUS_ASSIGN
 
-//operator priority, cu cat sunt mai jos, cu cat au prioritate mai mare
+//operator priority
 %left TOK_OR
 %left TOK_AND
 %left TOK_EQ TOK_NEQ
@@ -45,19 +43,26 @@ global_elements:
 global_decl:
     class_decl
     | return_type TOK_ID global_decl_suffix
-    | data_type TOK_ID global_decl_suffix /* allow data_type (including TOK_ID) as return type */
     ;
 
 global_decl_suffix:
-    '(' param_list ')' '{' func_body '}'
-    | var_decl_suffix
+    '(' param_list ')' '{' func_body '}'   /* Function definition */
+    | var_decl_suffix                      /* Global variable */
     ;
 
 //data types & classes
 
 data_type:
-TOK_TYPE_INT | TOK_TYPE_FLOAT | TOK_TYPE_STRING | TOK_TYPE_BOOL 
+    TOK_TYPE_INT | TOK_TYPE_FLOAT | TOK_TYPE_STRING | TOK_TYPE_BOOL 
     | TOK_ID /* Objects */
+    ;
+
+/* primitive types for local variable declarations (disambiguation) */
+simple_type:
+    TOK_TYPE_INT
+    | TOK_TYPE_FLOAT
+    | TOK_TYPE_STRING
+    | TOK_TYPE_BOOL
     ;
 
 class_decl:
@@ -85,25 +90,15 @@ class_member_suffix:
 
 //functions
 
-/* functions keep return_type for explicit void */
-/* return_type was folded into data_type for function declarations; remove unused nonterminal */
-
-simple_type:
-    TOK_TYPE_INT
-    | TOK_TYPE_FLOAT
-    | TOK_TYPE_STRING
-    | TOK_TYPE_BOOL
-    ;
-
 param_list:
     non_empty_params
     | /* empty */
     ;
 
 non_empty_params:
-non_empty_params ',' data_type TOK_ID
-| data_type TOK_ID
-;
+    non_empty_params ',' data_type TOK_ID
+    | data_type TOK_ID
+    ;
 
 func_body:
     var_decl_list stmt_list_pure
@@ -151,8 +146,8 @@ assignment_stmt:
     ;
 
 unary_stmt:
-    lvalue TOK_INC        /* matches: counter++ */
-    | lvalue TOK_DEC      /* matches: counter-- */
+    lvalue TOK_INC        
+    | lvalue TOK_DEC      
     ;
 
 print_stmt:
