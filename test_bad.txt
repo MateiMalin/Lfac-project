@@ -5,7 +5,7 @@ finale {
     se (i == 0) {
         canta("Errore in arrivo...");
         
-        /* ERROR: Variable declaration inside an IF block */
+        /* eroare de a initia in if*/
         basso errore; 
         
         errore := 1;

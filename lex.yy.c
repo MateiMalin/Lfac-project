@@ -937,7 +937,7 @@ YY_RULE_SETUP
 case 21:
 YY_RULE_SETUP
 #line 42 "maestro.l"
-{ return LIT_STRING; } /* manual string read removed for safety */
+{ return LIT_STRING; } 
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
@@ -992,7 +992,7 @@ YY_RULE_SETUP
 case 32:
 YY_RULE_SETUP
 #line 56 "maestro.l"
-{ return yytext[0]; } /*yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
+{ return yytext[0]; } 
 	YY_BREAK
 case 33:
 /* rule 33 can match eol */

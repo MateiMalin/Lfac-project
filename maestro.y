@@ -204,7 +204,7 @@ literal:
 
 void yyerror(const char *s) {
     fprintf(stderr, "Errore di Sintassi line %d: %s\n", yylineno, s);
-    exit(1);
+    exit(1);      
 }
 
 int main() {

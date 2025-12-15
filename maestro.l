@@ -39,7 +39,7 @@
 [a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } // asta pentru numele la variabile */
 ([0-9]+\.[0-9]+)      { return LIT_FLOAT; }
 ([0-9]+)               { return LIT_INT; }
-\"[^"\n]*\"           { return LIT_STRING; } /* manual string read removed for safety */
+\"[^"\n]*\"           { return LIT_STRING; } 
 
 ":="        { return TOK_ASSIGN; }
 "=="        {return TOK_EQ;}
@@ -53,7 +53,7 @@
 "+="        { return TOK_PLUS_ASSIGN; }  
 
 
-[+\-*/<>;,(){}.] { return yytext[0]; } /*yytext o sa fie un char* cu lexemul gasit; returnam caracterul */
+[+\-*/<>;,(){}.] { return yytext[0]; } 
 
 [ \t\r\n]+ ; /* ignoram whitespace */
 
