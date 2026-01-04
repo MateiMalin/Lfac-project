@@ -1,0 +1,24 @@
+Symbol Table: Function: inregistreaza
+Parent Scope: Global Scope
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+nume			libretto			parameter
+varsta			basso			parameter
+x			basso			local_var
+
+Symbol Table: Main Function
+Parent Scope: Global Scope
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+
+Symbol Table: Global Scope
+Parent Scope: NULL
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+inregistreaza			silenzio			function
+n			libretto			global_var
+v			basso			global_var
+

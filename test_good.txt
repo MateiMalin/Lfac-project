@@ -12,7 +12,7 @@ opera LaTraviata {
 }
 
 silenzio preparaScena() {
-    basso luci;
+    basso luci; 
     luci := 1;
     canta("Luci accese!");
 }

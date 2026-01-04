@@ -4,11 +4,11 @@ silenzio inregistreaza(basso varsta, libretto nume) {
     canta(nume);
 }
 
+basso v;    
+libretto n;
+
 finale {
-    basso v;
     v := 25;
-    
-    libretto n;
     n := "Mario";
 
     /* --- SCENARIUL 1: CORECT --- */

@@ -98,6 +98,8 @@ std::ofstream tableFile("tables.txt");
     std::vector<std::string>* vectorValue; 
 }
 
+%define parse.error verbose
+
 //token definition
 %token <stringValue> TOK_TYPE_INT TOK_TYPE_FLOAT TOK_TYPE_STRING TOK_TYPE_BOOL TOK_TYPE_VOID
 %token <stringValue> TOK_ID 
@@ -159,11 +161,13 @@ global_decl_suffix:
         // Cream scope ul functiei
         SymbolTable* functionScope = new SymbolTable("Function: " + currentName, currentScope); 
         currentScope = functionScope; 
-    } ')' '{' func_body '}' { 
+    }
+    param_list ')' '{' func_body '}' { 
         // Finalul functiei - printam tabela si revenim la parinte 
         currentScope->printTable(tableFile); 
         currentScope = currentScope->parent; 
-    } | var_decl_suffix { 
+    } | 
+    var_decl_suffix { 
         // Daca ajungem aici inseamna da declaratia este o variabila globala (o adaugam in scope)
         if(!currentScope->addSymbol(currentName, currentType, "global_var")) { 
             yyerror(("Symbol" + currentName + "already defined.").c_str()); 
