@@ -1,9 +1,9 @@
 /* aici o sa ii dam inputul si el le transforma in tokenuri ca sa le recunoasca so basically asta e un dictionar */
 
 %{
+#include "maestro.tab.h" 
 #include <stdio.h>
 #include <stdlib.h>
-#include "maestro.tab.h" /* header generat de bison */
 %}
 
 
@@ -20,11 +20,26 @@
 <COMMENT>.      { ; }                 
 "//".* { ; }
 
-"basso"    {return TOK_TYPE_INT;}
-"soprano"  {return TOK_TYPE_FLOAT;}
-"libretto" {return TOK_TYPE_STRING;}
-"verita"   {return TOK_TYPE_BOOL;}
-"silenzio" {return TOK_TYPE_VOID;}
+"basso"    {
+    yylval.strVal = strdup(yytext); 
+    return TOK_TYPE_INT;
+}
+"soprano"  {
+    yylval.strVal = strdup(yytext); 
+    return TOK_TYPE_FLOAT;
+}
+"libretto" {
+    yylval.strVal = strdup(yytext); 
+    return TOK_TYPE_STRING;
+}
+"verita"   {
+    yylval.strVal = strdup(yytext); 
+    return TOK_TYPE_BOOL;
+}
+"silenzio" {
+    yylval.strVal = strdup(yytext); 
+    return TOK_TYPE_VOID;
+}
 
 
 "opera"     {return TOK_CLASS;}
@@ -36,10 +51,14 @@
 "vero"      {return TOK_TRUE;}
 "falso"     {return TOK_FALSE;}
 
-[a-zA-Z_][a-zA-Z0-9_]* { return TOK_ID; } // asta pentru numele la variabile */
+[a-zA-Z_][a-zA-Z0-9_]* { 
+    yylval.strVal = strdup(yytext); 
+    return TOK_ID; 
+} // asta pentru numele la variabile 
+
 ([0-9]+\.[0-9]+)      { return LIT_FLOAT; }
 ([0-9]+)               { return LIT_INT; }
-\"[^"\n]*\"           { return LIT_STRING; } /* manual string read removed for safety */
+\"[^"\n]*\"           { return LIT_STRING; }
 
 ":="        { return TOK_ASSIGN; }
 "=="        {return TOK_EQ;}

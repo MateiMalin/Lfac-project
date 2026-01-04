@@ -1,0 +1,38 @@
+Symbol Table: Method: cantaAria
+Parent Scope: Class: LaTraviata
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+note			basso			local_var
+
+Symbol Table: Class: LaTraviata
+Parent Scope: Global Scope
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+atti			basso			field
+cantaAria			silenzio			method
+
+Symbol Table: Function: preparaScena
+Parent Scope: Global Scope
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+luci			basso			local_var
+
+Symbol Table: Main Function
+Parent Scope: Global Scope
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+
+Symbol Table: Global Scope
+Parent Scope: NULL
+____________________________________________
+1)Name			2)Type			3)Kind
+____________________________________________
+LaTraviata			class			class_def
+counter			basso			global_var
+preparaScena			silenzio			function
+prezzo			soprano			global_var
+

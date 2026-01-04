@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "compiling $1"
-rm -f lex.yy.ca
+rm -f lex.yy.cc
 rm -f $1.tab.c
 rm -f $1
 bison -d $1.y
