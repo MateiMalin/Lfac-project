@@ -44,6 +44,13 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 91 "maestro.y"
+ 
+    #include <vector> 
+    #include <string> 
+
+#line 54 "maestro.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -89,11 +96,12 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 70 "maestro.y"
+#line 96 "maestro.y"
  
-    char* strVal; 
+    char* stringValue; 
+    std::vector<std::string>* vectorValue; 
 
-#line 97 "maestro.tab.h"
+#line 105 "maestro.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

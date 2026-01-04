@@ -1,13 +1,41 @@
-finale {
-    basso i;
-    i := 0;
+basso counter;
+soprano prezzo;
+basso testBad; 
+
+opera LaTraviata {
+    basso atti;
     
-    se (i == 0) {
-        canta("Errore in arrivo...");
-        
-        /* ERROR: Variable declaration inside an IF block */
-        basso errore; 
-        
-        errore := 1;
+    silenzio cantaAria() {
+        basso note;
+        note := 7;
+        canta(note);
     }
+}
+
+silenzio preparaScena() {
+    basso luci;
+    luci := 1;
+    canta("Luci accese!");
+}
+    
+finale {
+    counter := 0;
+    prezzo := 10.50;
+    
+    canta("Inizia lo spettacolo...");
+    
+    durante (counter < 5) {
+        canta(counter);
+        
+        counter++;       
+        counter += 1;
+        
+        se (counter == 4) {
+            canta("Quasi finito!");
+        }
+    }
+
+    testBad2 := 12;     
+    
+    canta("Applausi!");
 }

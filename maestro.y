@@ -8,6 +8,7 @@
 #include <fstream> 
 #include <cstdio> 
 #include <cstdlib> 
+#include <cstring> 
 
 extern int yylineno;
 int yylex(void);
@@ -16,6 +17,7 @@ void yyerror(const char *s);
 class Symbol { 
     public: 
         std::string name, type, kind; 
+        std::vector <std::string> paramTypes; 
         Symbol(std::string _name, std::string _type, std::string _kind) { 
             name = _name; 
             type = _type; 
@@ -28,6 +30,7 @@ class SymbolTable {
         std::string scope; 
         SymbolTable* parent; 
         std::map<std::string, Symbol> symbols; 
+        Symbol* lastAddedFunction = nullptr; 
 
         SymbolTable(std::string _scope, SymbolTable* _parent = nullptr) { 
             scope = _scope; 
@@ -40,7 +43,25 @@ class SymbolTable {
             Symbol currentSymbol = Symbol(_name, _type, _kind); 
             symbols.insert({ _name, currentSymbol});
 
+            if(_kind == "method" || _kind == "function") lastAddedFunction = &symbols.at(_name);
+
             return true; 
+        }
+
+        void addParamToLastFunction (std::string paramType) { 
+            if(lastAddedFunction != nullptr) lastAddedFunction->paramTypes.push_back(paramType); 
+            else if (parent != nullptr) parent->addParamToLastFunction(paramType); 
+        }
+
+        Symbol* findSymbol(std::string name) { 
+            if(symbols.find(name) != symbols.end()) return &symbols.at(name); 
+            if(parent != nullptr) return parent->findSymbol(name); 
+
+            return nullptr; 
+        }
+
+        void addParamToLastSymbol(std::string paramType) { 
+
         }
 
         void printTable(std::ofstream& fout) { 
@@ -67,20 +88,28 @@ std::string currentType, currentName, currentClassName;
 std::ofstream tableFile("tables.txt"); 
 %}
 
+%code requires { 
+    #include <vector> 
+    #include <string> 
+}
+
 %union { 
-    char* strVal; 
+    char* stringValue; 
+    std::vector<std::string>* vectorValue; 
 }
 
 //token definition
-%token <strVal> TOK_TYPE_INT TOK_TYPE_FLOAT TOK_TYPE_STRING TOK_TYPE_BOOL TOK_TYPE_VOID
-%token <strVal> TOK_ID 
+%token <stringValue> TOK_TYPE_INT TOK_TYPE_FLOAT TOK_TYPE_STRING TOK_TYPE_BOOL TOK_TYPE_VOID
+%token <stringValue> TOK_ID 
 %token TOK_CLASS TOK_MAIN TOK_IF TOK_WHILE TOK_PRINT
 %token TOK_TRUE TOK_FALSE
 %token LIT_INT LIT_FLOAT LIT_STRING
 %token TOK_ASSIGN TOK_EQ TOK_NEQ TOK_LEQ TOK_GEQ TOK_AND TOK_OR
 %token TOK_INC TOK_DEC TOK_PLUS_ASSIGN
 
-%type <strVal> data_type simple_type return_type
+%type <stringValue> expression lvalue literal func_call
+%type <stringValue> data_type simple_type return_type
+%type <vectorValue> args_list non_empty_args
 
 //operator priority
 %left TOK_OR
@@ -218,9 +247,11 @@ param_list:
 non_empty_params:
     non_empty_params ',' data_type TOK_ID { 
         currentScope->addSymbol($4, $3, "parameter"); 
+        currentScope->addParamToLastFunction($3); 
     } | 
     data_type TOK_ID { 
         currentScope->addSymbol($2, $1, "parameter"); 
+        currentScope->addParamToLastFunction($1); 
     }
     ; 
 
@@ -273,10 +304,40 @@ statement:
     ;
 
 assignment_stmt:
-    lvalue TOK_ASSIGN expression ';'
-    | lvalue TOK_PLUS_ASSIGN expression ';'
-    ;
+    lvalue TOK_ASSIGN expression ';' { 
+        // $1 = numele variabilei 
+        // $3 = tipul expresiei
 
+        // Verificam daca a fost declarata variabila 
+        Symbol* symbol = currentScope->findSymbol($1);
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string($1) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        // Verificam daca tipurile coincid 
+        if(strcmp(symbol->type.c_str(), $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string($3) + " la o variabila de tip" + symbol->type).c_str());
+            exit(1); 
+        }
+    } |
+    lvalue TOK_PLUS_ASSIGN expression ';' { 
+        // $1 = numele variabilei 
+        // $3 = tipul expresiei
+
+        // Verificam daca a fost declarata variabila 
+        Symbol* symbol = currentScope->findSymbol($1);
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string($1) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        // Verificam daca tipurile coincid 
+        if(strcmp(symbol->type.c_str(), $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string($3) + " la o variabila de tip" + symbol->type).c_str());
+            exit(1); 
+        }
+    }
 unary_stmt:
     lvalue TOK_INC        
     | lvalue TOK_DEC      
@@ -305,45 +366,124 @@ block_pure:
 //expression
 
 expression:
-    expression '+' expression
-    | expression '-' expression
-    | expression '*' expression
-    | expression '/' expression
-    | expression '<' expression
-    | expression '>' expression
-    | expression TOK_LEQ expression
-    | expression TOK_GEQ expression
-    | expression TOK_EQ expression
-    | expression TOK_NEQ expression
-    | expression TOK_AND expression
-    | expression TOK_OR expression
-    | '(' expression ')'
-    | '-' expression %prec UMINUS
-    | func_call
-    | lvalue
-    | literal
+    expression '+' expression { 
+        if(strcmp($1, $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti aduna " + std::string($1) + " cu " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        $$ = $1; 
+    }
+    | expression '-' expression { 
+        if(strcmp($1, $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti face scadere intre un " + std::string($1) + " si un " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        $$ = $1; 
+    }
+    | expression '*' expression { 
+        if(strcmp($1, $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti inmulti " + std::string($1) + " cu " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        $$ = $1; 
+    }
+    | expression '/' expression { 
+        if(strcmp($1, $3) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti imparti " + std::string($1) + " cu " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        $$ = $1; 
+    }
+    | expression '<' expression { $$ = strdup("verita"); }
+    | expression '>' expression { $$ = strdup("verita"); }
+    | expression TOK_LEQ expression { $$ = strdup("verita"); }
+    | expression TOK_GEQ expression { $$ = strdup("verita"); }
+    | expression TOK_EQ expression { $$ = strdup("verita"); }
+    | expression TOK_NEQ expression { $$ = strdup("verita"); }
+    | expression TOK_AND expression { $$ = strdup("verita"); }
+    | expression TOK_OR expression { $$ = strdup("verita"); }
+    | '(' expression ')' { $$ = $2; }
+    | '-' expression %prec UMINUS { $$ = $2; }
+    | func_call { $$ = strdup("unknown"); } // TODO
+    | lvalue { 
+        Symbol* symbol = currentScope->findSymbol($1);
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila: " + std::string($1) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        $$ = strdup(symbol->type.c_str()); 
+    } | 
+    literal { 
+        $$ = $1; 
+    }
     ;
 
 lvalue:
-    TOK_ID| TOK_ID '.' TOK_ID
+    TOK_ID { 
+        $$ = $1; 
+    } | 
+    TOK_ID '.' TOK_ID { 
+        $$ = $3; 
+    }
     ;
 
 func_call:
-    TOK_ID '(' args_list ')'| TOK_ID '.' TOK_ID '(' args_list ')'
+    TOK_ID '(' args_list ')' { 
+        Symbol* function = currentScope->findSymbol($1); 
+        if(!function) { 
+            yyerror(("[EROARE SEMANTICA] Functia " + std::string($1) + " nu este definita!").c_str()); 
+            exit(1); 
+        }
+
+        // Verifica numarul de parametri
+        std::vector<std::string>* args = $3; 
+        if(function->paramTypes.size() != args->size()) { 
+            yyerror(("[EROARE SINTACTICA] Functia " + std::string($1) + " asteapta " + std::to_string(function->paramTypes.size()) + " argumente, dar i s-au dat " + std::to_string(args->size())).c_str());
+            exit(1); 
+        }
+
+        // Verifica tipul fiecarui parametru
+        for(size_t i = 0; i < args->size(); i++) { 
+            if(function->paramTypes[i] != (*args)[i]) { 
+                yyerror(("[EROARE SINTACTICA] La functia " + std::string($1) + " , argumentul " + std::to_string(i + 1) + " trebuie sa fie " + function->paramTypes[i] + ", dar a primti" + (*args)[i]).c_str());
+                exit(1);  
+            }
+        }
+
+        $$ = strdup(function->type.c_str()); 
+        delete args; 
+    } | TOK_ID '.' TOK_ID '(' args_list ')' { 
+        $$ = strdup("unknown");  // TODO 
+    }
     ;
 
 args_list:
-    non_empty_args |
+    non_empty_args { $$ = $1; } |
+        { $$ = new std::vector<std::string>(); } 
     ;
 
 non_empty_args:
-    non_empty_args ',' expression| expression
-    ;
+    non_empty_args ',' expression { 
+        $1->push_back($3); 
+        $$ = $1; 
+    } | 
+    expression { 
+        $$ = new std::vector<std::string> (); 
+        $$->push_back($1); 
+    }
+    ; 
 
 literal:
-    LIT_INT | LIT_FLOAT | LIT_STRING | TOK_TRUE | TOK_FALSE
-    ;
-
+    LIT_INT { $$ = strdup("basso"); } |
+    LIT_FLOAT { $$ = strdup("soprano"); } | 
+    LIT_STRING { $$ = strdup("libretto"); } | 
+    TOK_TRUE { $$ = strdup("verita"); } | 
+    TOK_FALSE { $$ = strdup("verita"); }
 %%
 
 void yyerror(const char *s) {

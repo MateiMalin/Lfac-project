@@ -76,6 +76,7 @@
 #include <fstream> 
 #include <cstdio> 
 #include <cstdlib> 
+#include <cstring> 
 
 extern int yylineno;
 int yylex(void);
@@ -84,6 +85,7 @@ void yyerror(const char *s);
 class Symbol { 
     public: 
         std::string name, type, kind; 
+        std::vector <std::string> paramTypes; 
         Symbol(std::string _name, std::string _type, std::string _kind) { 
             name = _name; 
             type = _type; 
@@ -96,6 +98,7 @@ class SymbolTable {
         std::string scope; 
         SymbolTable* parent; 
         std::map<std::string, Symbol> symbols; 
+        Symbol* lastAddedFunction = nullptr; 
 
         SymbolTable(std::string _scope, SymbolTable* _parent = nullptr) { 
             scope = _scope; 
@@ -108,7 +111,25 @@ class SymbolTable {
             Symbol currentSymbol = Symbol(_name, _type, _kind); 
             symbols.insert({ _name, currentSymbol});
 
+            if(_kind == "method" || _kind == "function") lastAddedFunction = &symbols.at(_name);
+
             return true; 
+        }
+
+        void addParamToLastFunction (std::string paramType) { 
+            if(lastAddedFunction != nullptr) lastAddedFunction->paramTypes.push_back(paramType); 
+            else if (parent != nullptr) parent->addParamToLastFunction(paramType); 
+        }
+
+        Symbol* findSymbol(std::string name) { 
+            if(symbols.find(name) != symbols.end()) return &symbols.at(name); 
+            if(parent != nullptr) return parent->findSymbol(name); 
+
+            return nullptr; 
+        }
+
+        void addParamToLastSymbol(std::string paramType) { 
+
         }
 
         void printTable(std::ofstream& fout) { 
@@ -134,7 +155,7 @@ std::string currentType, currentName, currentClassName;
 
 std::ofstream tableFile("tables.txt"); 
 
-#line 138 "maestro.tab.c"
+#line 159 "maestro.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -634,16 +655,16 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    98,    98,    98,   110,   110,   114,   114,   114,   122,
-     122,   137,   148,   149,   150,   151,   152,   156,   157,   158,
-     159,   163,   163,   178,   178,   182,   182,   190,   191,   195,
-     198,   198,   215,   215,   219,   222,   228,   232,   232,   236,
-     245,   245,   245,   251,   251,   264,   264,   268,   269,   270,
-     271,   272,   276,   277,   281,   282,   286,   290,   290,   294,
-     298,   302,   308,   309,   310,   311,   312,   313,   314,   315,
-     316,   317,   318,   319,   320,   321,   322,   323,   324,   328,
-     328,   332,   332,   336,   336,   340,   340,   344,   344,   344,
-     344,   344
+       0,   127,   127,   127,   139,   139,   143,   143,   143,   151,
+     151,   166,   177,   178,   179,   180,   181,   185,   186,   187,
+     188,   192,   192,   207,   207,   211,   211,   219,   220,   224,
+     227,   227,   244,   244,   248,   252,   259,   263,   263,   267,
+     276,   276,   276,   282,   282,   295,   295,   299,   300,   301,
+     302,   303,   307,   324,   342,   343,   347,   351,   351,   355,
+     359,   363,   369,   377,   385,   393,   401,   402,   403,   404,
+     405,   406,   407,   408,   409,   410,   411,   412,   421,   427,
+     430,   436,   460,   466,   467,   471,   475,   482,   483,   484,
+     485,   486
 };
 #endif
 
@@ -1345,34 +1366,34 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* $@1: %empty  */
-#line 98 "maestro.y"
+#line 127 "maestro.y"
     { 
         globalScope = new SymbolTable("Global Scope"); 
         currentScope = globalScope; 
     }
-#line 1354 "maestro.tab.c"
+#line 1375 "maestro.tab.c"
     break;
 
   case 3: /* program: $@1 global_elements finale_block  */
-#line 103 "maestro.y"
+#line 132 "maestro.y"
     { 
         currentScope->printTable(tableFile); 
         std::cout << "Sintassi Corretta!\n"; 
     }
-#line 1363 "maestro.tab.c"
+#line 1384 "maestro.tab.c"
     break;
 
   case 7: /* $@2: %empty  */
-#line 114 "maestro.y"
+#line 143 "maestro.y"
                                    { 
-        currentType = (yyvsp[-1].strVal); 
-        currentName = (yyvsp[0].strVal); 
+        currentType = (yyvsp[-1].stringValue); 
+        currentName = (yyvsp[0].stringValue); 
     }
-#line 1372 "maestro.tab.c"
+#line 1393 "maestro.tab.c"
     break;
 
   case 9: /* $@3: %empty  */
-#line 122 "maestro.y"
+#line 151 "maestro.y"
         { 
         // Incepe o functie
 
@@ -1385,137 +1406,137 @@ yyreduce:
         SymbolTable* functionScope = new SymbolTable("Function: " + currentName, currentScope); 
         currentScope = functionScope; 
     }
-#line 1389 "maestro.tab.c"
+#line 1410 "maestro.tab.c"
     break;
 
   case 10: /* global_decl_suffix: '(' $@3 ')' '{' func_body '}'  */
-#line 133 "maestro.y"
+#line 162 "maestro.y"
                             { 
         // Finalul functiei - printam tabela si revenim la parinte 
         currentScope->printTable(tableFile); 
         currentScope = currentScope->parent; 
     }
-#line 1399 "maestro.tab.c"
+#line 1420 "maestro.tab.c"
     break;
 
   case 11: /* global_decl_suffix: var_decl_suffix  */
-#line 137 "maestro.y"
+#line 166 "maestro.y"
                         { 
         // Daca ajungem aici inseamna da declaratia este o variabila globala (o adaugam in scope)
         if(!currentScope->addSymbol(currentName, currentType, "global_var")) { 
             yyerror(("Symbol" + currentName + "already defined.").c_str()); 
         }
     }
-#line 1410 "maestro.tab.c"
+#line 1431 "maestro.tab.c"
     break;
 
   case 12: /* data_type: TOK_TYPE_INT  */
-#line 148 "maestro.y"
-                 { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1416 "maestro.tab.c"
+#line 177 "maestro.y"
+                 { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1437 "maestro.tab.c"
     break;
 
   case 13: /* data_type: TOK_TYPE_FLOAT  */
-#line 149 "maestro.y"
-                   { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1422 "maestro.tab.c"
+#line 178 "maestro.y"
+                   { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1443 "maestro.tab.c"
     break;
 
   case 14: /* data_type: TOK_TYPE_STRING  */
-#line 150 "maestro.y"
-                    { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1428 "maestro.tab.c"
+#line 179 "maestro.y"
+                    { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1449 "maestro.tab.c"
     break;
 
   case 15: /* data_type: TOK_TYPE_BOOL  */
-#line 151 "maestro.y"
-                  { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1434 "maestro.tab.c"
+#line 180 "maestro.y"
+                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1455 "maestro.tab.c"
     break;
 
   case 16: /* data_type: TOK_ID  */
-#line 152 "maestro.y"
-           { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1440 "maestro.tab.c"
+#line 181 "maestro.y"
+           { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1461 "maestro.tab.c"
     break;
 
   case 17: /* simple_type: TOK_TYPE_INT  */
-#line 156 "maestro.y"
-                 { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1446 "maestro.tab.c"
+#line 185 "maestro.y"
+                 { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1467 "maestro.tab.c"
     break;
 
   case 18: /* simple_type: TOK_TYPE_FLOAT  */
-#line 157 "maestro.y"
-                   { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1452 "maestro.tab.c"
+#line 186 "maestro.y"
+                   { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1473 "maestro.tab.c"
     break;
 
   case 19: /* simple_type: TOK_TYPE_STRING  */
-#line 158 "maestro.y"
-                    { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1458 "maestro.tab.c"
+#line 187 "maestro.y"
+                    { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1479 "maestro.tab.c"
     break;
 
   case 20: /* simple_type: TOK_TYPE_BOOL  */
-#line 159 "maestro.y"
-                  { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1464 "maestro.tab.c"
+#line 188 "maestro.y"
+                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1485 "maestro.tab.c"
     break;
 
   case 21: /* $@4: %empty  */
-#line 163 "maestro.y"
+#line 192 "maestro.y"
                      { 
-        std::string className = (yyvsp[0].strVal); 
+        std::string className = (yyvsp[0].stringValue); 
         currentScope->addSymbol(className, "class", "class_def"); 
 
         // Cream un nou scope pentru clasa
         SymbolTable* classScope = new SymbolTable("Class: " + className, currentScope); 
         currentScope = classScope; 
     }
-#line 1477 "maestro.tab.c"
+#line 1498 "maestro.tab.c"
     break;
 
   case 22: /* class_decl: TOK_CLASS TOK_ID $@4 '{' class_body '}'  */
-#line 171 "maestro.y"
+#line 200 "maestro.y"
                        { 
         currentScope->printTable(tableFile); 
         currentScope = currentScope->parent; 
     }
-#line 1486 "maestro.tab.c"
-    break;
-
-  case 25: /* $@5: %empty  */
-#line 182 "maestro.y"
-                       {
-        currentType = (yyvsp[-1].strVal); 
-        currentName = (yyvsp[0].strVal); 
-    }
-#line 1495 "maestro.tab.c"
-    break;
-
-  case 27: /* return_type: data_type  */
-#line 190 "maestro.y"
-              { (yyval.strVal) = (yyvsp[0].strVal); }
-#line 1501 "maestro.tab.c"
-    break;
-
-  case 28: /* return_type: TOK_TYPE_VOID  */
-#line 191 "maestro.y"
-                  { (yyval.strVal) = (yyvsp[0].strVal); }
 #line 1507 "maestro.tab.c"
     break;
 
+  case 25: /* $@5: %empty  */
+#line 211 "maestro.y"
+                       {
+        currentType = (yyvsp[-1].stringValue); 
+        currentName = (yyvsp[0].stringValue); 
+    }
+#line 1516 "maestro.tab.c"
+    break;
+
+  case 27: /* return_type: data_type  */
+#line 219 "maestro.y"
+              { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1522 "maestro.tab.c"
+    break;
+
+  case 28: /* return_type: TOK_TYPE_VOID  */
+#line 220 "maestro.y"
+                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1528 "maestro.tab.c"
+    break;
+
   case 29: /* class_member_suffix: ';'  */
-#line 195 "maestro.y"
+#line 224 "maestro.y"
         { 
         currentScope->addSymbol(currentName, currentType, "field"); 
     }
-#line 1515 "maestro.tab.c"
+#line 1536 "maestro.tab.c"
     break;
 
   case 30: /* $@6: %empty  */
-#line 198 "maestro.y"
+#line 227 "maestro.y"
         { 
         // Metoda a clasei
         currentScope->addSymbol(currentName, currentType, "method"); 
@@ -1524,64 +1545,364 @@ yyreduce:
         SymbolTable* methodScope = new SymbolTable("Method: " + currentName, currentScope); 
         currentScope = methodScope; 
     }
-#line 1528 "maestro.tab.c"
+#line 1549 "maestro.tab.c"
     break;
 
   case 31: /* class_member_suffix: '(' $@6 param_list ')' '{' func_body '}'  */
-#line 206 "maestro.y"
+#line 235 "maestro.y"
                                      { 
         currentScope->printTable(tableFile); 
         currentScope = currentScope->parent; 
     }
-#line 1537 "maestro.tab.c"
+#line 1558 "maestro.tab.c"
     break;
 
   case 34: /* non_empty_params: non_empty_params ',' data_type TOK_ID  */
-#line 219 "maestro.y"
+#line 248 "maestro.y"
                                           { 
-        currentScope->addSymbol((yyvsp[0].strVal), (yyvsp[-1].strVal), "parameter"); 
+        currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
+        currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
     }
-#line 1545 "maestro.tab.c"
+#line 1567 "maestro.tab.c"
     break;
 
   case 35: /* non_empty_params: data_type TOK_ID  */
-#line 222 "maestro.y"
+#line 252 "maestro.y"
                      { 
-        currentScope->addSymbol((yyvsp[0].strVal), (yyvsp[-1].strVal), "parameter"); 
+        currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
+        currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
     }
-#line 1553 "maestro.tab.c"
+#line 1576 "maestro.tab.c"
     break;
 
   case 39: /* var_decl: simple_type TOK_ID var_decl_suffix  */
-#line 236 "maestro.y"
+#line 267 "maestro.y"
                                        { 
-        if(!currentScope->addSymbol((yyvsp[-1].strVal), (yyvsp[-2].strVal), "local_var")) { 
-            yyerror(("Variable" + std::string((yyvsp[-1].strVal)) + "redeclared!").c_str()); 
+        if(!currentScope->addSymbol((yyvsp[-1].stringValue), (yyvsp[-2].stringValue), "local_var")) { 
+            yyerror(("Variable" + std::string((yyvsp[-1].stringValue)) + "redeclared!").c_str()); 
         }
     }
-#line 1563 "maestro.tab.c"
+#line 1586 "maestro.tab.c"
     break;
 
   case 43: /* $@7: %empty  */
-#line 251 "maestro.y"
+#line 282 "maestro.y"
              { 
         SymbolTable* mainScope = new SymbolTable("Main Function", currentScope);
         currentScope = mainScope; 
     }
-#line 1572 "maestro.tab.c"
+#line 1595 "maestro.tab.c"
     break;
 
   case 44: /* finale_block: TOK_MAIN $@7 '{' stmt_list_pure '}'  */
-#line 255 "maestro.y"
+#line 286 "maestro.y"
                            { 
         currentScope->printTable(tableFile); 
         currentScope = currentScope->parent; 
     }
-#line 1581 "maestro.tab.c"
+#line 1604 "maestro.tab.c"
+    break;
+
+  case 52: /* assignment_stmt: lvalue TOK_ASSIGN expression ';'  */
+#line 307 "maestro.y"
+                                     { 
+        // $1 = numele variabilei 
+        // $3 = tipul expresiei
+
+        // Verificam daca a fost declarata variabila 
+        Symbol* symbol = currentScope->findSymbol((yyvsp[-3].stringValue));
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        // Verificam daca tipurile coincid 
+        if(strcmp(symbol->type.c_str(), (yyvsp[-1].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string((yyvsp[-1].stringValue)) + " la o variabila de tip" + symbol->type).c_str());
+            exit(1); 
+        }
+    }
+#line 1626 "maestro.tab.c"
+    break;
+
+  case 53: /* assignment_stmt: lvalue TOK_PLUS_ASSIGN expression ';'  */
+#line 324 "maestro.y"
+                                          { 
+        // $1 = numele variabilei 
+        // $3 = tipul expresiei
+
+        // Verificam daca a fost declarata variabila 
+        Symbol* symbol = currentScope->findSymbol((yyvsp[-3].stringValue));
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        // Verificam daca tipurile coincid 
+        if(strcmp(symbol->type.c_str(), (yyvsp[-1].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string((yyvsp[-1].stringValue)) + " la o variabila de tip" + symbol->type).c_str());
+            exit(1); 
+        }
+    }
+#line 1648 "maestro.tab.c"
+    break;
+
+  case 62: /* expression: expression '+' expression  */
+#line 369 "maestro.y"
+                              { 
+        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti aduna " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
+            exit(1); 
+        }
+
+        (yyval.stringValue) = (yyvsp[-2].stringValue); 
+    }
+#line 1661 "maestro.tab.c"
+    break;
+
+  case 63: /* expression: expression '-' expression  */
+#line 377 "maestro.y"
+                                { 
+        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti face scadere intre un " + std::string((yyvsp[-2].stringValue)) + " si un " + std::string((yyvsp[0].stringValue))).c_str());
+            exit(1); 
+        }
+
+        (yyval.stringValue) = (yyvsp[-2].stringValue); 
+    }
+#line 1674 "maestro.tab.c"
+    break;
+
+  case 64: /* expression: expression '*' expression  */
+#line 385 "maestro.y"
+                                { 
+        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti inmulti " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
+            exit(1); 
+        }
+
+        (yyval.stringValue) = (yyvsp[-2].stringValue); 
+    }
+#line 1687 "maestro.tab.c"
+    break;
+
+  case 65: /* expression: expression '/' expression  */
+#line 393 "maestro.y"
+                                { 
+        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
+            yyerror(("[EROARE SEMANTICA] Nu poti imparti " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
+            exit(1); 
+        }
+
+        (yyval.stringValue) = (yyvsp[-2].stringValue); 
+    }
+#line 1700 "maestro.tab.c"
+    break;
+
+  case 66: /* expression: expression '<' expression  */
+#line 401 "maestro.y"
+                                { (yyval.stringValue) = strdup("verita"); }
+#line 1706 "maestro.tab.c"
+    break;
+
+  case 67: /* expression: expression '>' expression  */
+#line 402 "maestro.y"
+                                { (yyval.stringValue) = strdup("verita"); }
+#line 1712 "maestro.tab.c"
+    break;
+
+  case 68: /* expression: expression TOK_LEQ expression  */
+#line 403 "maestro.y"
+                                    { (yyval.stringValue) = strdup("verita"); }
+#line 1718 "maestro.tab.c"
+    break;
+
+  case 69: /* expression: expression TOK_GEQ expression  */
+#line 404 "maestro.y"
+                                    { (yyval.stringValue) = strdup("verita"); }
+#line 1724 "maestro.tab.c"
+    break;
+
+  case 70: /* expression: expression TOK_EQ expression  */
+#line 405 "maestro.y"
+                                   { (yyval.stringValue) = strdup("verita"); }
+#line 1730 "maestro.tab.c"
+    break;
+
+  case 71: /* expression: expression TOK_NEQ expression  */
+#line 406 "maestro.y"
+                                    { (yyval.stringValue) = strdup("verita"); }
+#line 1736 "maestro.tab.c"
+    break;
+
+  case 72: /* expression: expression TOK_AND expression  */
+#line 407 "maestro.y"
+                                    { (yyval.stringValue) = strdup("verita"); }
+#line 1742 "maestro.tab.c"
+    break;
+
+  case 73: /* expression: expression TOK_OR expression  */
+#line 408 "maestro.y"
+                                   { (yyval.stringValue) = strdup("verita"); }
+#line 1748 "maestro.tab.c"
+    break;
+
+  case 74: /* expression: '(' expression ')'  */
+#line 409 "maestro.y"
+                         { (yyval.stringValue) = (yyvsp[-1].stringValue); }
+#line 1754 "maestro.tab.c"
+    break;
+
+  case 75: /* expression: '-' expression  */
+#line 410 "maestro.y"
+                                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
+#line 1760 "maestro.tab.c"
+    break;
+
+  case 76: /* expression: func_call  */
+#line 411 "maestro.y"
+                { (yyval.stringValue) = strdup("unknown"); }
+#line 1766 "maestro.tab.c"
+    break;
+
+  case 77: /* expression: lvalue  */
+#line 412 "maestro.y"
+             { 
+        Symbol* symbol = currentScope->findSymbol((yyvsp[0].stringValue));
+        if(symbol == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Variabila: " + std::string((yyvsp[0].stringValue)) + " nu este definita!").c_str());
+            exit(1); 
+        }
+
+        (yyval.stringValue) = strdup(symbol->type.c_str()); 
+    }
+#line 1780 "maestro.tab.c"
+    break;
+
+  case 78: /* expression: literal  */
+#line 421 "maestro.y"
+            { 
+        (yyval.stringValue) = (yyvsp[0].stringValue); 
+    }
+#line 1788 "maestro.tab.c"
+    break;
+
+  case 79: /* lvalue: TOK_ID  */
+#line 427 "maestro.y"
+           { 
+        (yyval.stringValue) = (yyvsp[0].stringValue); 
+    }
+#line 1796 "maestro.tab.c"
+    break;
+
+  case 80: /* lvalue: TOK_ID '.' TOK_ID  */
+#line 430 "maestro.y"
+                      { 
+        (yyval.stringValue) = (yyvsp[0].stringValue); 
+    }
+#line 1804 "maestro.tab.c"
+    break;
+
+  case 81: /* func_call: TOK_ID '(' args_list ')'  */
+#line 436 "maestro.y"
+                             { 
+        Symbol* function = currentScope->findSymbol((yyvsp[-3].stringValue)); 
+        if(!function) { 
+            yyerror(("[EROARE SEMANTICA] Functia " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str()); 
+            exit(1); 
+        }
+
+        // Verifica numarul de parametri
+        std::vector<std::string>* args = (yyvsp[-1].vectorValue); 
+        if(function->paramTypes.size() != args->size()) { 
+            yyerror(("[EROARE SINTACTICA] Functia " + std::string((yyvsp[-3].stringValue)) + " asteapta " + std::to_string(function->paramTypes.size()) + " argumente, dar i s-au dat " + std::to_string(args->size())).c_str());
+            exit(1); 
+        }
+
+        // Verifica tipul fiecarui parametru
+        for(size_t i = 0; i < args->size(); i++) { 
+            if(function->paramTypes[i] != (*args)[i]) { 
+                yyerror(("[EROARE SINTACTICA] La functia " + std::string((yyvsp[-3].stringValue)) + " , argumentul " + std::to_string(i + 1) + " trebuie sa fie " + function->paramTypes[i] + ", dar a primti" + (*args)[i]).c_str());
+                exit(1);  
+            }
+        }
+
+        (yyval.stringValue) = strdup(function->type.c_str()); 
+        delete args; 
+    }
+#line 1834 "maestro.tab.c"
+    break;
+
+  case 82: /* func_call: TOK_ID '.' TOK_ID '(' args_list ')'  */
+#line 460 "maestro.y"
+                                            { 
+        (yyval.stringValue) = strdup("unknown");  // TODO 
+    }
+#line 1842 "maestro.tab.c"
+    break;
+
+  case 83: /* args_list: non_empty_args  */
+#line 466 "maestro.y"
+                   { (yyval.vectorValue) = (yyvsp[0].vectorValue); }
+#line 1848 "maestro.tab.c"
+    break;
+
+  case 84: /* args_list: %empty  */
+#line 467 "maestro.y"
+        { (yyval.vectorValue) = new std::vector<std::string>(); }
+#line 1854 "maestro.tab.c"
+    break;
+
+  case 85: /* non_empty_args: non_empty_args ',' expression  */
+#line 471 "maestro.y"
+                                  { 
+        (yyvsp[-2].vectorValue)->push_back((yyvsp[0].stringValue)); 
+        (yyval.vectorValue) = (yyvsp[-2].vectorValue); 
+    }
+#line 1863 "maestro.tab.c"
+    break;
+
+  case 86: /* non_empty_args: expression  */
+#line 475 "maestro.y"
+               { 
+        (yyval.vectorValue) = new std::vector<std::string> (); 
+        (yyval.vectorValue)->push_back((yyvsp[0].stringValue)); 
+    }
+#line 1872 "maestro.tab.c"
+    break;
+
+  case 87: /* literal: LIT_INT  */
+#line 482 "maestro.y"
+            { (yyval.stringValue) = strdup("basso"); }
+#line 1878 "maestro.tab.c"
+    break;
+
+  case 88: /* literal: LIT_FLOAT  */
+#line 483 "maestro.y"
+              { (yyval.stringValue) = strdup("soprano"); }
+#line 1884 "maestro.tab.c"
+    break;
+
+  case 89: /* literal: LIT_STRING  */
+#line 484 "maestro.y"
+               { (yyval.stringValue) = strdup("libretto"); }
+#line 1890 "maestro.tab.c"
+    break;
+
+  case 90: /* literal: TOK_TRUE  */
+#line 485 "maestro.y"
+             { (yyval.stringValue) = strdup("verita"); }
+#line 1896 "maestro.tab.c"
+    break;
+
+  case 91: /* literal: TOK_FALSE  */
+#line 486 "maestro.y"
+              { (yyval.stringValue) = strdup("verita"); }
+#line 1902 "maestro.tab.c"
     break;
 
 
-#line 1585 "maestro.tab.c"
+#line 1906 "maestro.tab.c"
 
       default: break;
     }
@@ -1774,7 +2095,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 347 "maestro.y"
+#line 487 "maestro.y"
 
 
 void yyerror(const char *s) {

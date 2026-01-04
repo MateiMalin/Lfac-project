@@ -1,0 +1,10 @@
+basso inregistreaza(basso varsta, libretto nume) { 
+    basso x; 
+    x := varsta + 1;
+    canta(nume); 
+}
+
+finale {
+    basso v; 
+    v := inregireaza(v, "Mario"); 
+}
