@@ -14,10 +14,14 @@ extern int yylineno;
 int yylex(void);
 void yyerror(const char *s);
 
+class SymbolTable; 
+
 class Symbol { 
     public: 
         std::string name, type, kind; 
         std::vector <std::string> paramTypes; 
+        SymbolTable* nestedScope = nullptr; 
+
         Symbol(std::string _name, std::string _type, std::string _kind) { 
             name = _name; 
             type = _type; 
@@ -199,6 +203,9 @@ class_decl:
 
         // Cream un nou scope pentru clasa
         SymbolTable* classScope = new SymbolTable("Class: " + className, currentScope); 
+        Symbol* classSymbol = currentScope->findSymbol(className); 
+        if(classSymbol != nullptr) classSymbol->nestedScope = classScope; 
+
         currentScope = classScope; 
     }
     '{' class_body '}' { 
@@ -432,7 +439,30 @@ lvalue:
         $$ = $1; 
     } | 
     TOK_ID '.' TOK_ID { 
-        $$ = $3; 
+        // Cautam obiectul 
+        Symbol* object = currentScope->findSymbol($1); 
+        if(object == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Obiectul " + std::string($1) + " nu este definit!").c_str());
+            exit(1); 
+        } 
+
+        std::string className = object->type; 
+        Symbol* classSymbol = currentScope->findSymbol(className);
+
+        // verificam daca exista clasa 
+        if(classSymbol == nullptr || classSymbol->kind != "class_def") { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string($1) + " este de tip " + className + ", care nu este o clasa!").c_str());
+            exit(1); 
+        }
+
+        SymbolTable* classScope = classSymbol->nestedScope; 
+        if(classScope->symbols.find($3) == classScope->symbols.end()) { 
+            yyerror(("[EROARE SEMANTICA] Clasa " + className +  " nu are membru " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        Symbol &member = classScope->symbols.at($3); 
+        $$ = strdup(member.type.c_str()); 
     }
     ;
 
@@ -462,7 +492,53 @@ func_call:
         $$ = strdup(function->type.c_str()); 
         delete args; 
     } | TOK_ID '.' TOK_ID '(' args_list ')' { 
-        $$ = strdup("unknown");  // TODO 
+        // Cautam obiectul 
+        Symbol* object = currentScope->findSymbol($1); 
+        if(object == nullptr) { 
+            yyerror(("[EROARE SEMANTICA] Obiectul " + std::string($1) + " nu este definit!").c_str());
+            exit(1); 
+        } 
+
+        std::string className = object->type; 
+        Symbol* classSymbol = currentScope->findSymbol(className);
+
+        // verificam daca exista clasa 
+        if(classSymbol == nullptr || classSymbol->kind != "class_def") { 
+            yyerror(("[EROARE SEMANTICA] Variabila " + std::string($1) + " este de tip " + className + ", care nu este o clasa!").c_str());
+            exit(1); 
+        }
+        
+        SymbolTable* classScope = classSymbol->nestedScope; 
+        if(classScope->symbols.find($3) == classScope->symbols.end()) { 
+            yyerror(("[EROARE SEMANTICA] Clasa " + className +  " nu are metoda " + std::string($3)).c_str());
+            exit(1); 
+        }
+
+        Symbol& method = classScope->symbols.at($3);
+
+        if(method.kind != "method") { 
+            yyerror(("[EROARE SEMANTICA] " + std::string($3) + " nu este o metoda a clasei, ci este un camp!").c_str()); 
+            exit(1); 
+        }
+
+        std::vector<std::string>* args = $5; 
+
+        // Verificarea numarului de argumente
+        if(method.paramTypes.size() != args->size()) { 
+            yyerror(( "[EROARE SINTACTICA] Metoda " + std::string($3) + " asteapta " + std::to_string(method.paramTypes.size()) + " argumente, dar i s-au dat " + std::to_string(args->size())).c_str());
+            exit(1); 
+        }
+
+        // Verificarea tipului argumentelor
+        for(size_t i = 0; i < args->size(); i++) { 
+            if(method.paramTypes[i] != (*args)[i]) { 
+                yyerror(("[EROARE SEMANTICA] La metoda " + std::string($3) + ", argumentul " + std::to_string(i + 1) + " trebuie sa fie " + method.paramTypes[i] + ", dar a primit" + (*args)[i]).c_str()); 
+                exit(1); 
+            }
+        }
+
+        $$ = strdup(method.type.c_str()); 
+        delete args; 
     }
     ;
 

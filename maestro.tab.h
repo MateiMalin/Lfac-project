@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 91 "maestro.y"
+#line 95 "maestro.y"
  
     #include <vector> 
     #include <string> 
@@ -96,7 +96,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 96 "maestro.y"
+#line 100 "maestro.y"
  
     char* stringValue; 
     std::vector<std::string>* vectorValue; 
