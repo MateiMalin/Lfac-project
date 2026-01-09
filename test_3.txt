@@ -1,0 +1,37 @@
+silenzio inregistreaza(basso varsta, libretto nume) {
+    basso x;
+    x := varsta + 1;
+    canta(nume);
+}
+
+basso v;    
+libretto n;
+
+finale {
+    v := 25;
+    n := "Mario";
+
+    /* --- SCENARIUL 1: CORECT --- */
+    /* Apelam exact cu tipurile cerute: (basso, libretto) */
+    inregistreaza(v, n);
+    inregistreaza(30, "Luigi");
+
+
+    /* --- SCENARIUL 2: EROARE - NUMAR GRESIT DE PARAMETRI --- */
+    /* Decomenteaza linia de mai jos ca sa vezi eroarea */
+    
+    // inregistreaza(v); 
+
+
+    /* --- SCENARIUL 3: EROARE - TIPURI GRESITE --- */
+    /* Functia vrea (basso, libretto), noi ii dam (libretto, basso) */
+    /* Decomenteaza linia de mai jos ca sa vezi eroarea */
+    
+    // inregistreaza(n, v);
+
+
+    /* --- SCENARIUL 4: EROARE - TIP INCOMPATIBIL --- */
+    /* Al doilea parametru e float (soprano), functia vrea string */
+    
+    // inregistreaza(20, 5.5);
+}

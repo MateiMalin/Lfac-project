@@ -44,6 +44,13 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 95 "maestro.y"
+ 
+    #include <vector> 
+    #include <string> 
+
+#line 54 "maestro.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -59,14 +66,14 @@ extern int yydebug;
     TOK_TYPE_STRING = 260,         /* TOK_TYPE_STRING  */
     TOK_TYPE_BOOL = 261,           /* TOK_TYPE_BOOL  */
     TOK_TYPE_VOID = 262,           /* TOK_TYPE_VOID  */
-    TOK_CLASS = 263,               /* TOK_CLASS  */
-    TOK_MAIN = 264,                /* TOK_MAIN  */
-    TOK_IF = 265,                  /* TOK_IF  */
-    TOK_WHILE = 266,               /* TOK_WHILE  */
-    TOK_PRINT = 267,               /* TOK_PRINT  */
-    TOK_TRUE = 268,                /* TOK_TRUE  */
-    TOK_FALSE = 269,               /* TOK_FALSE  */
-    TOK_ID = 270,                  /* TOK_ID  */
+    TOK_ID = 263,                  /* TOK_ID  */
+    TOK_CLASS = 264,               /* TOK_CLASS  */
+    TOK_MAIN = 265,                /* TOK_MAIN  */
+    TOK_IF = 266,                  /* TOK_IF  */
+    TOK_WHILE = 267,               /* TOK_WHILE  */
+    TOK_PRINT = 268,               /* TOK_PRINT  */
+    TOK_TRUE = 269,                /* TOK_TRUE  */
+    TOK_FALSE = 270,               /* TOK_FALSE  */
     LIT_INT = 271,                 /* LIT_INT  */
     LIT_FLOAT = 272,               /* LIT_FLOAT  */
     LIT_STRING = 273,              /* LIT_STRING  */
@@ -87,7 +94,17 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+union YYSTYPE
+{
+#line 100 "maestro.y"
+ 
+    char* stringValue; 
+    std::vector<std::string>* vectorValue; 
+
+#line 105 "maestro.tab.h"
+
+};
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
