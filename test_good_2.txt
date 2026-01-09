@@ -1,0 +1,15 @@
+// sample code for maestro
+basso x;
+soprano y;
+
+finale {
+    x := 10 + 5;
+    y := 3.14 + 2.0;
+    
+    canta(x); // Should print 15
+    canta(y); // Should print 5.14
+    
+    se (x == 15) {
+        canta("Vero!"); 
+    }
+}
