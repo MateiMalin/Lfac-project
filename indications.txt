@@ -36,3 +36,246 @@ Structura :
 Lexer (mastro.l)-> transforms the inputs into tokens that can be recognised
 The Parser (maestro.y)->the structure, constraint checks 
 
+Maestro Programming Language Compiler
+
+A compiler for a custom programming language implemented using Flex (lexer) and Bison (parser) in C++.
+Language Features
+Data Types (Predefined)
+
+    basso - Integer type
+    soprano - Float type
+    libretto - String type
+    verita - Boolean type
+    silenzio - Void type
+
+Keywords
+
+    ensemble - Class declaration
+    finale - Main block
+    fortissimo - If statement
+    crescendo - While loop
+    esegui - Print function
+    vero - Boolean true
+    falso - Boolean false
+
+Operators
+
+    Arithmetic: +, -, *, /
+    Comparison: ==, !=, <, >, <=, >=
+    Logical: &&, ||
+    Assignment: :=, +=, -=, *=, /=
+    Increment/Decrement: ++, --
+
+Syntax Rules
+
+    Main Block: Every program must have a finale block (no variable/function definitions allowed inside)
+    Global Scope: Classes and functions can be defined globally
+    Function Scope: Local variables can be defined inside functions but not inside statement blocks
+    Class Scope: Classes can only be defined in global scope
+
+Project Components
+1. Lexer (maestro.l)
+
+    Tokenizes the input source code
+    Recognizes keywords, identifiers, literals, and operators
+    Tracks line numbers for error reporting
+
+2. Parser (maestro.y)
+
+    Defines the grammar rules
+    Builds Abstract Syntax Trees (AST)
+    Performs semantic analysis
+    Manages symbol tables
+    Evaluates expressions
+
+3. Symbol Tables
+
+Symbol tables are created for different scopes:
+
+    Global Scope: Contains global variables, functions, and classes
+    Function Scope: Contains local variables and parameters
+    Class Scope: Contains class fields and methods
+
+Each symbol table stores:
+
+    Symbol name
+    Type
+    Kind (variable, function, parameter, etc.)
+    Value (for variables)
+    Parameter types (for functions)
+
+4. AST Evaluation
+
+AST nodes support:
+
+    Literals (integers, floats, strings, booleans)
+    Identifiers
+    Binary operations (+, -, *, /, ==, !=, <, >, <=, >=, &&, ||)
+    Unary operations (unary minus)
+    Assignments
+    Function calls
+    Print statements
+
+Semantic Checks
+
+The compiler verifies:
+
+    ✅ All identifiers are declared before use
+    ✅ No duplicate declarations in the same scope
+    ✅ Type consistency in expressions (no implicit casting)
+    ✅ Assignment type compatibility
+    ✅ Function call parameter count and types match definitions
+    ✅ Field/method existence when accessing class members
+
+Error messages include line numbers and detailed descriptions.
+Building and Running
+Prerequisites
+
+    g++ (C++11 or later)
+    flex
+    bison
+
+Compilation
+bash
+
+make
+
+This generates:
+
+    maestro - The compiler executable
+    tables.txt - Symbol table dump
+
+Running
+bash
+
+./maestro < test.maestro
+
+Cleaning
+bash
+
+make clean
+
+Example Program
+
+basso x;
+basso y;
+
+basso add(basso a, basso b) {
+    basso result;
+}
+
+finale {
+    x := (10);
+    y := (20);
+    
+    basso sum;
+    sum := (x + y);
+    esegui(sum);
+    
+    fortissimo (x < y) {
+        esegui(x);
+    }
+}
+
+Output Files
+tables.txt
+
+Contains all symbol tables from different scopes with:
+
+    Symbol names
+    Types
+    Kinds
+    Parameter information (for functions)
+
+Console Output
+
+    Evaluated expressions from esegui() statements
+    "Syntax Correct!" on successful compilation
+    Error messages with line numbers on failures
+
+Error Handling
+
+The compiler provides detailed error messages:
+
+Semantic Errors:
+
+    Variable 'x' not defined!
+    Identifier 'x' already declared in this scope!
+    Cannot assign type 'soprano' to variable of type 'basso'
+    Operands must have same type. Got 'basso' and 'soprano'
+    Function 'foo' expects 2 arguments, but got 3
+    Function 'foo' argument 1 expects type 'basso' but got 'soprano'
+
+Syntax Errors:
+
+    Include line numbers and context
+
+Implementation Details
+AST Node Types
+
+    NODE_LITERAL - Constant values
+    NODE_ID - Variable references
+    NODE_OP - Binary/unary operations
+    NODE_ASSIGN - Assignment statements
+    NODE_PRINT - Print statements
+    NODE_OTHER - Function calls
+
+Value Wrapper Class
+
+Stores values of any language type:
+cpp
+
+class Value {
+    string type;
+    int iVal;
+    float fVal;
+    string sVal;
+    bool bVal;
+}
+
+Scope Management
+
+    Scopes are nested hierarchically
+    Symbol lookup follows parent chain
+    Each scope knows its parent for nested lookups
+
+Project Requirements Met
+
+✅ Syntax (3.5pt)
+
+    Data types and classes (1pt)
+    Arithmetic and boolean expressions (1pt)
+    Statements and function definitions (1pt)
+    Syntactic constraints (0.5pt)
+
+✅ Symbol Tables (1.5pt)
+
+    Global, function, and class scopes
+    Parent-child relationships
+    Identifier information storage
+    Output to tables.txt
+
+✅ Semantic Analysis (2pt)
+
+    Field/method existence checks (0.5pt)
+    Identifier definition and uniqueness (0.25pt)
+    Expression type consistency (0.5pt)
+    Assignment type compatibility (0.25pt)
+    Function parameter validation (0.5pt)
+
+✅ AST Evaluation (3pt)
+
+    AST construction for expressions
+    Type-aware evaluation
+    Assignment execution
+    Print functionality
+    Expression evaluation in main block
+
+Notes
+
+    No global AST variables used
+    Minimal use of global variables (only scope pointers and file handle)
+    YACC attributes used extensively
+    Clean separation of concerns
+    Comprehensive error reporting
+
