@@ -1,7 +1,11 @@
+/* TEST 6: Definire Clasa si Apel Metoda 
+   Obiectiv: Verificam daca 'pavarotti.cantaAria()' functioneaza.
+*/
+
 /* 1. DEFINIM CLASA SI METODELE */
 opera Solist {
     basso volum;
-
+    
     /* Metoda care cere un String si un Int */
     silenzio cantaAria(libretto titlu, basso durata) {
         canta(titlu);
@@ -13,24 +17,16 @@ opera Solist {
 Solist pavarotti;
 libretto melodie;
 basso timp;
-basso x_simplu;
 
 /* 3. EXECUTIE */
 finale {
     /* Initializare */
     melodie := "Nessun Dorma";
     timp := 5;
-    x_simplu := 10;
 
-    /* --- SCENARIUL 1: CORECT --- */
     /* Apelam metoda obiectului cu parametrii corecti */
     pavarotti.cantaAria(melodie, timp);
     
     /* Apelam cu literali */
     pavarotti.cantaAria("O sole mio", 3);
-
-
-    /* --- SCENARII DE EROARE (Decomenteaza pe rand) --- */
-
-    x_simplu.cantaAria("RE", 1); 
 }

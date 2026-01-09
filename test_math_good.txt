@@ -1,0 +1,39 @@
+/* TEST 1: Operatii Matematice si Zahar Sintactic 
+   REGULA: Variabile globale, executie in finale.
+*/
+
+/* 1. DECLARARE GLOBALA */
+basso x;
+basso y;
+
+/* 2. EXECUTIE */
+finale {
+    /* Initializare */
+    x := 10;
+    y := 5;
+    
+    /* Operatii simple */
+    canta("Testam adunarea (10 + 5):");
+    canta(x + y);
+
+    canta("Testam inmultirea (10 * 5):");
+    canta(x * y);
+
+    /* Operatii Compuse (Syntactic Sugar) */
+    x += 5; /* x devine 15 */
+    canta("Dupa x += 5 (Asteptat 15):");
+    canta(x);
+
+    y *= 2; /* y devine 10 */
+    canta("Dupa y *= 2 (Asteptat 10):");
+    canta(y);
+
+    /* Incrementare / Decrementare */
+    x++; /* x devine 16 */
+    canta("Dupa x++ (Asteptat 16):");
+    canta(x);
+
+    y--; /* y devine 9 */
+    canta("Dupa y-- (Asteptat 9):");
+    canta(y);
+}

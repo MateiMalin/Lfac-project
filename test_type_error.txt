@@ -1,0 +1,16 @@
+/* TEST 3: Eroare de Tip
+   Obiectiv: Trebuie sa CRAPE (Int + Float).
+*/
+
+basso x;
+soprano y;
+
+finale {
+    x := 10;
+    y := 5.5;
+
+    canta("Incercam sa adunam int cu float...");
+    
+    /* Aici compilatorul tau trebuie sa dea eroare de tip */
+    canta(x + y); 
+}

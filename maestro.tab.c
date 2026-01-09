@@ -67,7 +67,7 @@
 
 
 /* First part of user prologue.  */
-#line 3 "maestro.y"
+#line 1 "maestro.y"
 
 #include <iostream> 
 #include <vector> 
@@ -82,6 +82,17 @@ extern int yylineno;
 int yylex(void);
 void yyerror(const char *s);
 
+class Value {
+public:
+    std::string type;
+    int iVal;
+    float fVal;
+    std::string sVal;
+    bool bVal;
+
+    Value() : type("silenzio"), iVal(0), fVal(0.0), bVal(false) {}
+};
+
 class SymbolTable; 
 
 class Symbol { 
@@ -89,11 +100,13 @@ class Symbol {
         std::string name, type, kind; 
         std::vector <std::string> paramTypes; 
         SymbolTable* nestedScope = nullptr; 
+        Value value; 
 
         Symbol(std::string _name, std::string _type, std::string _kind) { 
-            name = _name; 
-            type = _type; 
-            kind = _kind; 
+            name = _name; type = _type; kind = _kind; 
+            if (type == "basso") value.type = "basso", value.iVal = 0;
+            else if (type == "soprano") value.type = "soprano", value.fVal = 0.0;
+            else if (type == "verita") value.type = "verita", value.bVal = false;
         }
 }; 
 
@@ -104,62 +117,158 @@ class SymbolTable {
         std::map<std::string, Symbol> symbols; 
         Symbol* lastAddedFunction = nullptr; 
 
-        SymbolTable(std::string _scope, SymbolTable* _parent = nullptr) { 
-            scope = _scope; 
-            parent = _parent; 
-        }
+        SymbolTable(std::string _scope, SymbolTable* _parent = nullptr) : scope(_scope), parent(_parent) {}
 
         bool addSymbol(std::string _name, std::string _type, std::string _kind) { 
             if(symbols.find(_name) != symbols.end()) return false; 
-
-            Symbol currentSymbol = Symbol(_name, _type, _kind); 
-            symbols.insert({ _name, currentSymbol});
-
+            symbols.insert({ _name, Symbol(_name, _type, _kind)});
             if(_kind == "method" || _kind == "function") lastAddedFunction = &symbols.at(_name);
-
             return true; 
-        }
-
-        void addParamToLastFunction (std::string paramType) { 
-            if(lastAddedFunction != nullptr) lastAddedFunction->paramTypes.push_back(paramType); 
-            else if (parent != nullptr) parent->addParamToLastFunction(paramType); 
         }
 
         Symbol* findSymbol(std::string name) { 
             if(symbols.find(name) != symbols.end()) return &symbols.at(name); 
             if(parent != nullptr) return parent->findSymbol(name); 
-
             return nullptr; 
         }
 
-        void addParamToLastSymbol(std::string paramType) { 
-
-        }
-
         void printTable(std::ofstream& fout) { 
-            fout << "Symbol Table: " << scope << '\n'; 
-            if(parent) fout << "Parent Scope: " << parent->scope << '\n'; 
-            else fout << "Parent Scope: NULL" << '\n'; 
-
-            fout << "____________________________________________" << '\n';
-            fout << "1)Name\t\t\t2)Type\t\t\t3)Kind" << '\n'; 
-            fout << "____________________________________________" << '\n';
-            for(auto const &[key, val] : symbols) { 
-                fout << val.name << "\t\t\t" << val.type << "\t\t\t" << val.kind << '\n';
-            }
-
-            fout << '\n'; 
+            fout << "Symbol Table: " << scope << "\n____________________________________________\n";
+            for(auto const &[key, val] : symbols) fout << val.name << "\t" << val.type << "\t" << val.kind << "\n";
+            fout << "\n"; 
         }
 }; 
 
 SymbolTable* globalScope = nullptr; 
 SymbolTable* currentScope = nullptr;
-
-std::string currentType, currentName, currentClassName; 
-
 std::ofstream tableFile("tables.txt"); 
 
-#line 163 "maestro.tab.c"
+// --- TASK IV: AST IMPLEMENTATION ---
+enum NodeType { NODE_LITERAL, NODE_ID, NODE_OP, NODE_ASSIGN, NODE_PRINT, NODE_OTHER };
+
+class ASTNode {
+public:
+    NodeType nodeType;
+    std::string op;
+    Value literalValue;
+    std::string idName;
+    std::string exprType;
+    ASTNode *left, *right;
+
+    ASTNode(NodeType t) : nodeType(t), left(nullptr), right(nullptr) {}
+
+Value evaluate() {
+        Value res;
+        switch(nodeType) {
+            case NODE_LITERAL: return literalValue;
+
+            case NODE_ID: {
+                Symbol* s = currentScope->findSymbol(idName);
+                if (!s) {
+                    std::cerr << "Error: Variable '" << idName << "' not declared!\n";
+                    exit(1);
+                }
+                return s->value;
+            }
+
+            case NODE_ASSIGN: {
+                Value val = right->evaluate();
+                Symbol* s = currentScope->findSymbol(idName);
+                
+                if (!s) {
+                    std::cerr << "Error: Cannot assign to undeclared variable '" << idName << "'\n";
+                    exit(1);
+                }
+
+                if (s->type != val.type) {
+                    std::cerr << "Error: Type mismatch. Cannot assign " << val.type << " to " << s->type << "\n";
+                    exit(1);
+                }
+
+                s->value = val; 
+                return val;
+            }
+
+            case NODE_PRINT: {
+                Value val = left->evaluate();
+                if (val.type == "basso") std::cout << val.iVal << "\n";
+                else if (val.type == "soprano") std::cout << val.fVal << "\n";
+                else if (val.type == "libretto") std::cout << val.sVal << "\n";
+                else if (val.type == "verita") std::cout << (val.bVal ? "vero" : "falso") << "\n";
+                return val;
+            }
+
+            case NODE_OP: {
+                Value l = left->evaluate(); 
+                Value r = right->evaluate();
+                
+                if (l.type != r.type) {
+                    std::cerr << "Error: Operation '" << op << "' requires operands of the same type.\n";
+                    exit(1);
+                }
+
+                res.type = l.type;
+
+                if (op == "+") {
+                    if (l.type == "basso") res.iVal = l.iVal + r.iVal;
+                    else if (l.type == "soprano") res.fVal = l.fVal + r.fVal;
+                } 
+                else if (op == "-") {
+                    if (l.type == "basso") res.iVal = l.iVal - r.iVal;
+                    else if (l.type == "soprano") res.fVal = l.fVal - r.fVal;
+                }
+                else if (op == "*") {
+                    if (l.type == "basso") res.iVal = l.iVal * r.iVal;
+                    else if (l.type == "soprano") res.fVal = l.fVal * r.fVal;
+                }
+                else if (op == "/") {
+                    if (l.type == "basso") {
+                        if (r.iVal == 0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        res.iVal = l.iVal / r.iVal;
+                    }
+                    else if (l.type == "soprano") {
+                        if (r.fVal == 0.0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        res.fVal = l.fVal / r.fVal;
+                    }
+                }
+                else {
+                    res.type = "verita";
+                    if (op == "==") {
+                        if (l.type == "basso") res.bVal = (l.iVal == r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal == r.fVal);
+                    }
+                    else if (op == "!=") {
+                        if (l.type == "basso") res.bVal = (l.iVal != r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal != r.fVal);
+                    }
+                    else if (op == "<") {
+                        if (l.type == "basso") res.bVal = (l.iVal < r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal < r.fVal);
+                    }
+                    else if (op == ">") {
+                        if (l.type == "basso") res.bVal = (l.iVal > r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal > r.fVal);
+                    }
+                    else if (op == "<=") {
+                        if (l.type == "basso") res.bVal = (l.iVal <= r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal <= r.fVal);
+                    }
+                    else if (op == ">=") {
+                        if (l.type == "basso") res.bVal = (l.iVal >= r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal >= r.fVal);
+                    }
+                }
+                return res;
+            }
+            case NODE_OTHER: return res;
+        }
+        return res;
+    }
+};
+
+std::string currentType, currentName; 
+
+#line 272 "maestro.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -196,16 +305,16 @@ enum yysymbol_kind_t
   YYSYMBOL_TOK_TYPE_BOOL = 6,              /* TOK_TYPE_BOOL  */
   YYSYMBOL_TOK_TYPE_VOID = 7,              /* TOK_TYPE_VOID  */
   YYSYMBOL_TOK_ID = 8,                     /* TOK_ID  */
-  YYSYMBOL_TOK_CLASS = 9,                  /* TOK_CLASS  */
-  YYSYMBOL_TOK_MAIN = 10,                  /* TOK_MAIN  */
-  YYSYMBOL_TOK_IF = 11,                    /* TOK_IF  */
-  YYSYMBOL_TOK_WHILE = 12,                 /* TOK_WHILE  */
-  YYSYMBOL_TOK_PRINT = 13,                 /* TOK_PRINT  */
-  YYSYMBOL_TOK_TRUE = 14,                  /* TOK_TRUE  */
-  YYSYMBOL_TOK_FALSE = 15,                 /* TOK_FALSE  */
-  YYSYMBOL_LIT_INT = 16,                   /* LIT_INT  */
-  YYSYMBOL_LIT_FLOAT = 17,                 /* LIT_FLOAT  */
-  YYSYMBOL_LIT_STRING = 18,                /* LIT_STRING  */
+  YYSYMBOL_LIT_INT = 9,                    /* LIT_INT  */
+  YYSYMBOL_LIT_FLOAT = 10,                 /* LIT_FLOAT  */
+  YYSYMBOL_LIT_STRING = 11,                /* LIT_STRING  */
+  YYSYMBOL_TOK_TRUE = 12,                  /* TOK_TRUE  */
+  YYSYMBOL_TOK_FALSE = 13,                 /* TOK_FALSE  */
+  YYSYMBOL_TOK_CLASS = 14,                 /* TOK_CLASS  */
+  YYSYMBOL_TOK_MAIN = 15,                  /* TOK_MAIN  */
+  YYSYMBOL_TOK_IF = 16,                    /* TOK_IF  */
+  YYSYMBOL_TOK_WHILE = 17,                 /* TOK_WHILE  */
+  YYSYMBOL_TOK_PRINT = 18,                 /* TOK_PRINT  */
   YYSYMBOL_TOK_ASSIGN = 19,                /* TOK_ASSIGN  */
   YYSYMBOL_TOK_EQ = 20,                    /* TOK_EQ  */
   YYSYMBOL_TOK_NEQ = 21,                   /* TOK_NEQ  */
@@ -216,61 +325,56 @@ enum yysymbol_kind_t
   YYSYMBOL_TOK_INC = 26,                   /* TOK_INC  */
   YYSYMBOL_TOK_DEC = 27,                   /* TOK_DEC  */
   YYSYMBOL_TOK_PLUS_ASSIGN = 28,           /* TOK_PLUS_ASSIGN  */
-  YYSYMBOL_29_ = 29,                       /* '<'  */
-  YYSYMBOL_30_ = 30,                       /* '>'  */
-  YYSYMBOL_31_ = 31,                       /* '+'  */
-  YYSYMBOL_32_ = 32,                       /* '-'  */
-  YYSYMBOL_33_ = 33,                       /* '*'  */
-  YYSYMBOL_34_ = 34,                       /* '/'  */
-  YYSYMBOL_UMINUS = 35,                    /* UMINUS  */
-  YYSYMBOL_36_ = 36,                       /* '('  */
-  YYSYMBOL_37_ = 37,                       /* ')'  */
-  YYSYMBOL_38_ = 38,                       /* '{'  */
-  YYSYMBOL_39_ = 39,                       /* '}'  */
-  YYSYMBOL_40_ = 40,                       /* ';'  */
-  YYSYMBOL_41_ = 41,                       /* ','  */
-  YYSYMBOL_42_ = 42,                       /* '.'  */
-  YYSYMBOL_YYACCEPT = 43,                  /* $accept  */
-  YYSYMBOL_program = 44,                   /* program  */
-  YYSYMBOL_45_1 = 45,                      /* $@1  */
-  YYSYMBOL_global_elements = 46,           /* global_elements  */
-  YYSYMBOL_global_decl = 47,               /* global_decl  */
-  YYSYMBOL_48_2 = 48,                      /* $@2  */
-  YYSYMBOL_global_decl_suffix = 49,        /* global_decl_suffix  */
-  YYSYMBOL_50_3 = 50,                      /* $@3  */
-  YYSYMBOL_data_type = 51,                 /* data_type  */
-  YYSYMBOL_simple_type = 52,               /* simple_type  */
-  YYSYMBOL_class_decl = 53,                /* class_decl  */
-  YYSYMBOL_54_4 = 54,                      /* $@4  */
-  YYSYMBOL_class_body = 55,                /* class_body  */
-  YYSYMBOL_class_member = 56,              /* class_member  */
-  YYSYMBOL_57_5 = 57,                      /* $@5  */
-  YYSYMBOL_return_type = 58,               /* return_type  */
-  YYSYMBOL_class_member_suffix = 59,       /* class_member_suffix  */
-  YYSYMBOL_60_6 = 60,                      /* $@6  */
-  YYSYMBOL_param_list = 61,                /* param_list  */
-  YYSYMBOL_non_empty_params = 62,          /* non_empty_params  */
-  YYSYMBOL_func_body = 63,                 /* func_body  */
-  YYSYMBOL_var_decl_list = 64,             /* var_decl_list  */
-  YYSYMBOL_var_decl = 65,                  /* var_decl  */
-  YYSYMBOL_var_decl_suffix = 66,           /* var_decl_suffix  */
-  YYSYMBOL_finale_block = 67,              /* finale_block  */
-  YYSYMBOL_68_7 = 68,                      /* $@7  */
-  YYSYMBOL_stmt_list_pure = 69,            /* stmt_list_pure  */
-  YYSYMBOL_statement = 70,                 /* statement  */
-  YYSYMBOL_assignment_stmt = 71,           /* assignment_stmt  */
-  YYSYMBOL_unary_stmt = 72,                /* unary_stmt  */
-  YYSYMBOL_print_stmt = 73,                /* print_stmt  */
-  YYSYMBOL_control_stmt = 74,              /* control_stmt  */
-  YYSYMBOL_if_stmt = 75,                   /* if_stmt  */
-  YYSYMBOL_while_stmt = 76,                /* while_stmt  */
-  YYSYMBOL_block_pure = 77,                /* block_pure  */
-  YYSYMBOL_expression = 78,                /* expression  */
-  YYSYMBOL_lvalue = 79,                    /* lvalue  */
-  YYSYMBOL_func_call = 80,                 /* func_call  */
-  YYSYMBOL_args_list = 81,                 /* args_list  */
-  YYSYMBOL_non_empty_args = 82,            /* non_empty_args  */
-  YYSYMBOL_literal = 83                    /* literal  */
+  YYSYMBOL_TOK_MINUS_ASSIGN = 29,          /* TOK_MINUS_ASSIGN  */
+  YYSYMBOL_TOK_MUL_ASSIGN = 30,            /* TOK_MUL_ASSIGN  */
+  YYSYMBOL_TOK_DIV_ASSIGN = 31,            /* TOK_DIV_ASSIGN  */
+  YYSYMBOL_32_ = 32,                       /* '<'  */
+  YYSYMBOL_33_ = 33,                       /* '>'  */
+  YYSYMBOL_34_ = 34,                       /* '+'  */
+  YYSYMBOL_35_ = 35,                       /* '-'  */
+  YYSYMBOL_36_ = 36,                       /* '*'  */
+  YYSYMBOL_37_ = 37,                       /* '/'  */
+  YYSYMBOL_UMINUS = 38,                    /* UMINUS  */
+  YYSYMBOL_39_ = 39,                       /* '('  */
+  YYSYMBOL_40_ = 40,                       /* ')'  */
+  YYSYMBOL_41_ = 41,                       /* '{'  */
+  YYSYMBOL_42_ = 42,                       /* '}'  */
+  YYSYMBOL_43_ = 43,                       /* ';'  */
+  YYSYMBOL_44_ = 44,                       /* '.'  */
+  YYSYMBOL_45_ = 45,                       /* ','  */
+  YYSYMBOL_YYACCEPT = 46,                  /* $accept  */
+  YYSYMBOL_program = 47,                   /* program  */
+  YYSYMBOL_48_1 = 48,                      /* $@1  */
+  YYSYMBOL_global_elements = 49,           /* global_elements  */
+  YYSYMBOL_global_decl = 50,               /* global_decl  */
+  YYSYMBOL_51_2 = 51,                      /* $@2  */
+  YYSYMBOL_global_decl_suffix = 52,        /* global_decl_suffix  */
+  YYSYMBOL_53_3 = 53,                      /* $@3  */
+  YYSYMBOL_finale_block = 54,              /* finale_block  */
+  YYSYMBOL_55_4 = 55,                      /* $@4  */
+  YYSYMBOL_stmt_list_pure = 56,            /* stmt_list_pure  */
+  YYSYMBOL_statement = 57,                 /* statement  */
+  YYSYMBOL_assignment_stmt = 58,           /* assignment_stmt  */
+  YYSYMBOL_print_stmt = 59,                /* print_stmt  */
+  YYSYMBOL_expression = 60,                /* expression  */
+  YYSYMBOL_func_call = 61,                 /* func_call  */
+  YYSYMBOL_args_list = 62,                 /* args_list  */
+  YYSYMBOL_non_empty_args = 63,            /* non_empty_args  */
+  YYSYMBOL_control_stmt = 64,              /* control_stmt  */
+  YYSYMBOL_if_stmt = 65,                   /* if_stmt  */
+  YYSYMBOL_while_stmt = 66,                /* while_stmt  */
+  YYSYMBOL_block_pure = 67,                /* block_pure  */
+  YYSYMBOL_class_decl = 68,                /* class_decl  */
+  YYSYMBOL_class_body = 69,                /* class_body  */
+  YYSYMBOL_class_member = 70,              /* class_member  */
+  YYSYMBOL_class_member_suffix = 71,       /* class_member_suffix  */
+  YYSYMBOL_param_list = 72,                /* param_list  */
+  YYSYMBOL_non_empty_params = 73,          /* non_empty_params  */
+  YYSYMBOL_func_body = 74,                 /* func_body  */
+  YYSYMBOL_var_decl = 75,                  /* var_decl  */
+  YYSYMBOL_var_decl_suffix = 76,           /* var_decl_suffix  */
+  YYSYMBOL_return_type = 77,               /* return_type  */
+  YYSYMBOL_data_type = 78                  /* data_type  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -468,7 +572,7 @@ typedef int yy_state_fast_t;
 
 #define YY_ASSERT(E) ((void) (0 && (E)))
 
-#if 1
+#if !defined yyoverflow
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
@@ -533,7 +637,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 # endif
-#endif /* 1 */
+#endif /* !defined yyoverflow */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
@@ -598,19 +702,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   331
+#define YYLAST   413
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  43
+#define YYNTOKENS  46
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  41
+#define YYNNTS  33
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  91
+#define YYNRULES  82
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  161
+#define YYNSTATES  160
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   284
+#define YYMAXUTOK   287
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -628,15 +732,15 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      36,    37,    33,    31,    41,    32,    42,    34,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    40,
-      29,     2,    30,     2,     2,     2,     2,     2,     2,     2,
+      39,    40,    36,    34,    45,    35,    44,    37,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    43,
+      32,     2,    33,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    38,     2,    39,     2,     2,     2,     2,
+       2,     2,     2,    41,     2,    42,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -652,30 +756,29 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    35
+      25,    26,    27,    28,    29,    30,    31,    38
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   133,   133,   133,   145,   145,   149,   149,   149,   157,
-     157,   174,   185,   186,   187,   188,   189,   193,   194,   195,
-     196,   200,   200,   218,   218,   222,   222,   230,   231,   235,
-     238,   238,   255,   255,   259,   263,   270,   274,   274,   278,
-     287,   287,   287,   293,   293,   306,   306,   310,   311,   312,
-     313,   314,   318,   335,   353,   354,   358,   362,   362,   366,
-     370,   374,   380,   388,   396,   404,   412,   413,   414,   415,
-     416,   417,   418,   419,   420,   421,   422,   423,   432,   438,
-     441,   470,   494,   546,   547,   551,   555,   562,   563,   564,
-     565,   566
+       0,   230,   230,   230,   234,   234,   236,   236,   236,   238,
+     238,   242,   245,   245,   252,   252,   255,   256,   257,   258,
+     259,   260,   271,   282,   292,   302,   312,   324,   327,   334,
+     339,   340,   341,   342,   344,   349,   350,   351,   352,   353,
+     354,   356,   357,   359,   360,   361,   362,   363,   364,   365,
+     366,   370,   374,   380,   381,   383,   384,   386,   386,   388,
+     390,   392,   394,   396,   396,   398,   400,   400,   402,   402,
+     404,   404,   406,   408,   410,   410,   412,   412,   414,   414,
+     414,   414,   414
 };
 #endif
 
 /** Accessing symbol of state STATE.  */
 #define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
 
-#if 1
+#if YYDEBUG || 0
 /* The user-facing name of the symbol whose (internal) number is
    YYSYMBOL.  No bounds checking.  */
 static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
@@ -686,20 +789,19 @@ static const char *const yytname[] =
 {
   "\"end of file\"", "error", "\"invalid token\"", "TOK_TYPE_INT",
   "TOK_TYPE_FLOAT", "TOK_TYPE_STRING", "TOK_TYPE_BOOL", "TOK_TYPE_VOID",
-  "TOK_ID", "TOK_CLASS", "TOK_MAIN", "TOK_IF", "TOK_WHILE", "TOK_PRINT",
-  "TOK_TRUE", "TOK_FALSE", "LIT_INT", "LIT_FLOAT", "LIT_STRING",
+  "TOK_ID", "LIT_INT", "LIT_FLOAT", "LIT_STRING", "TOK_TRUE", "TOK_FALSE",
+  "TOK_CLASS", "TOK_MAIN", "TOK_IF", "TOK_WHILE", "TOK_PRINT",
   "TOK_ASSIGN", "TOK_EQ", "TOK_NEQ", "TOK_LEQ", "TOK_GEQ", "TOK_AND",
-  "TOK_OR", "TOK_INC", "TOK_DEC", "TOK_PLUS_ASSIGN", "'<'", "'>'", "'+'",
-  "'-'", "'*'", "'/'", "UMINUS", "'('", "')'", "'{'", "'}'", "';'", "','",
-  "'.'", "$accept", "program", "$@1", "global_elements", "global_decl",
-  "$@2", "global_decl_suffix", "$@3", "data_type", "simple_type",
-  "class_decl", "$@4", "class_body", "class_member", "$@5", "return_type",
-  "class_member_suffix", "$@6", "param_list", "non_empty_params",
-  "func_body", "var_decl_list", "var_decl", "var_decl_suffix",
-  "finale_block", "$@7", "stmt_list_pure", "statement", "assignment_stmt",
-  "unary_stmt", "print_stmt", "control_stmt", "if_stmt", "while_stmt",
-  "block_pure", "expression", "lvalue", "func_call", "args_list",
-  "non_empty_args", "literal", YY_NULLPTR
+  "TOK_OR", "TOK_INC", "TOK_DEC", "TOK_PLUS_ASSIGN", "TOK_MINUS_ASSIGN",
+  "TOK_MUL_ASSIGN", "TOK_DIV_ASSIGN", "'<'", "'>'", "'+'", "'-'", "'*'",
+  "'/'", "UMINUS", "'('", "')'", "'{'", "'}'", "';'", "'.'", "','",
+  "$accept", "program", "$@1", "global_elements", "global_decl", "$@2",
+  "global_decl_suffix", "$@3", "finale_block", "$@4", "stmt_list_pure",
+  "statement", "assignment_stmt", "print_stmt", "expression", "func_call",
+  "args_list", "non_empty_args", "control_stmt", "if_stmt", "while_stmt",
+  "block_pure", "class_decl", "class_body", "class_member",
+  "class_member_suffix", "param_list", "non_empty_params", "func_body",
+  "var_decl", "var_decl_suffix", "return_type", "data_type", YY_NULLPTR
 };
 
 static const char *
@@ -709,7 +811,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-119)
+#define YYPACT_NINF (-26)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -723,23 +825,22 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-    -119,     5,  -119,  -119,    76,  -119,  -119,  -119,  -119,  -119,
-    -119,    15,  -119,  -119,  -119,  -119,    20,  -119,  -119,   -31,
-    -119,    -7,  -119,    -4,  -119,     8,    59,    59,  -119,  -119,
-    -119,  -119,     6,   -34,    -2,    12,    16,  -119,  -119,  -119,
-       1,  -119,  -119,  -119,  -119,    -1,    28,  -119,  -119,  -119,
-    -119,  -119,    59,    59,    81,  -119,  -119,  -119,   109,   319,
-    -119,  -119,    62,    59,    63,    59,    59,    59,  -119,    59,
-    -119,  -119,    59,  -119,  -119,   172,    59,    59,    59,    59,
-      59,    59,    59,    59,    59,    59,    59,    59,  -119,  -119,
-      64,    51,    46,  -119,   244,    55,    52,    58,   190,   208,
-     226,   130,   151,  -119,   287,   287,    91,    91,   274,   259,
-      91,    91,    17,    17,  -119,  -119,  -119,    61,   319,    -3,
-    -119,    59,    59,    69,    69,    56,  -119,  -119,  -119,    89,
-    -119,  -119,  -119,   244,    71,  -119,  -119,  -119,  -119,    70,
-     141,  -119,   319,  -119,    27,  -119,  -119,  -119,  -119,  -119,
-      92,  -119,   318,    79,  -119,    50,    80,  -119,  -119,    78,
-    -119
+     -26,    19,   -26,   -26,   398,   -26,   -26,   -26,   -26,   -26,
+     -26,    20,   -26,   -26,   -26,   -26,    28,   -26,    -2,    11,
+     -26,   -26,   -26,    36,    26,     0,    61,   -26,   -26,   -26,
+     -26,   -26,   -26,    30,    63,     2,    14,    38,   -26,   -26,
+     -26,   -26,    35,   -26,   -26,   -26,   -26,    73,   -24,   -26,
+     -26,   -26,   -26,   -26,    61,   111,   -26,   114,    37,    61,
+      44,    52,    61,    61,    61,    61,    61,    93,    61,    61,
+      61,   -26,    -6,    95,   279,    61,    61,    61,    61,    61,
+      61,    61,    61,    61,    61,    61,    61,   -26,    64,    60,
+      98,   114,   -26,   -26,   135,   -26,   -26,   159,   183,   207,
+     231,   363,    83,    71,     8,   300,   321,   342,   -26,    87,
+     -26,   105,   105,    49,    49,    76,   129,    49,    49,   -11,
+     -11,   -26,   -26,    88,   114,   -26,   133,   -26,   -26,   -26,
+     -26,   -26,   -26,    61,    61,    61,   134,   134,   131,   -26,
+     168,   136,   363,   255,   149,   -26,   -26,   -26,   -26,   182,
+     155,   -26,   -26,   -26,   -26,     6,   -26,   167,   -26,   -26
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -747,43 +848,40 @@ static const yytype_int16 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       2,     0,     5,     1,     0,    12,    13,    14,    15,    28,
-      16,     0,    43,     4,    27,     6,     0,     3,    21,     0,
-       7,     0,    46,     0,    24,     0,     0,     0,     9,    40,
-       8,    11,     0,    79,     0,     0,     0,    44,    45,    47,
-       0,    49,    48,    57,    58,     0,     0,    90,    91,    87,
-      88,    89,     0,     0,     0,    77,    76,    78,     0,    33,
-      22,    23,     0,    84,     0,     0,     0,     0,    51,     0,
-      54,    55,     0,    50,    75,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    41,    42,
-       0,     0,    32,    25,    86,     0,    83,    80,     0,     0,
-       0,     0,     0,    74,    70,    71,    68,    69,    72,    73,
-      66,    67,    62,    63,    64,    65,    35,     0,     0,     0,
-      81,     0,    84,     0,     0,     0,    52,    53,    38,     0,
-      30,    29,    26,    85,     0,    46,    59,    60,    56,     0,
-      46,    34,    33,    82,     0,    10,    17,    18,    19,    20,
-       0,    37,    36,     0,    61,     0,     0,    39,    38,     0,
-      31
+       2,     0,     5,     1,     0,    78,    79,    80,    81,    77,
+      82,     0,    12,     4,     3,     6,     0,    76,     0,     0,
+       7,    64,    15,     0,     0,     0,     0,     9,    74,     8,
+      11,    62,    63,     0,    82,     0,     0,     0,    13,    14,
+      16,    17,     0,    19,    57,    58,    20,     0,    48,    43,
+      44,    45,    46,    47,     0,     0,    49,    69,     0,     0,
+       0,     0,     0,     0,     0,     0,    54,     0,     0,     0,
+       0,    18,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,    75,     0,    68,
+       0,    69,    66,    65,     0,    21,    22,     0,     0,     0,
+       0,    56,     0,    53,     0,     0,     0,     0,    73,    34,
+      50,    35,    36,    39,    40,    41,    42,    37,    38,    30,
+      31,    32,    33,     0,     0,    71,     0,    27,    23,    24,
+      25,    26,    51,     0,     0,    54,     0,     0,     0,    15,
+       0,     0,    55,     0,     0,    15,    59,    60,    29,    72,
+       0,    70,    15,    28,    52,     0,    10,     0,    61,    67
 };
 
 /* YYPGOTO[NTERM-NUM].  */
-static const yytype_int8 yypgoto[] =
+static const yytype_int16 yypgoto[] =
 {
-    -119,  -119,  -119,  -119,  -119,  -119,  -119,  -119,   -53,  -119,
-    -119,  -119,  -119,  -119,  -119,    94,  -119,  -119,    -6,  -119,
-     -21,  -119,  -119,   -20,  -119,  -119,  -118,  -119,  -119,  -119,
-    -119,  -119,  -119,  -119,    24,   -23,   -25,   -24,    34,  -119,
-    -119
+     -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,
+     -20,   -26,   -26,   -26,   -19,   -25,    66,   -26,   -26,   -26,
+     -26,    74,   -26,   -26,   -26,   -26,   119,   -26,    62,   -26,
+     140,   189,    -3
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_uint8 yydefgoto[] =
 {
-       0,     1,     2,     4,    13,    23,    30,    59,    14,   150,
-      15,    21,    32,    61,   119,    16,   132,   142,    91,    92,
-     139,   140,   151,    31,    17,    19,    25,    38,    39,    40,
-      41,    42,    43,    44,   136,    94,    55,    56,    95,    96,
-      57
+       0,     1,     2,     4,    13,    23,    29,    57,    14,    19,
+     149,    39,    40,    41,   101,    56,   102,   103,    43,    44,
+      45,   146,    15,    24,    32,    93,    88,    89,   150,    46,
+      30,    16,    47
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -791,131 +889,144 @@ static const yytype_uint8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      45,    46,    63,    54,    58,     3,    90,    22,    64,     5,
-       6,     7,     8,     9,    10,    26,    33,   144,    69,    34,
-      35,    36,   152,    18,    27,    70,    71,    72,    20,    74,
-      75,    24,    28,   130,    65,    33,    29,   131,    34,    35,
-      36,    68,    98,    99,   100,    60,   101,    37,    66,   102,
-      86,    87,    67,   104,   105,   106,   107,   108,   109,   110,
-     111,   112,   113,   114,   115,   129,   154,    33,    73,    26,
-      93,    97,   116,    47,    48,    49,    50,    51,    27,     5,
-       6,     7,     8,     9,    10,    11,    12,   118,   117,    90,
-      29,    52,   120,   121,   122,    53,   138,   141,   133,   128,
-     155,    76,    77,    78,    79,    80,    81,   135,   143,   145,
-      82,    83,    84,    85,    86,    87,   156,   160,   158,    45,
-      46,    88,    84,    85,    86,    87,    62,    45,    46,    76,
-      77,    78,    79,    80,    81,   157,   153,   159,    82,    83,
-      84,    85,    86,    87,   146,   147,   148,   149,   137,    89,
-      76,    77,    78,    79,    80,    81,   134,     0,     0,    82,
-      83,    84,    85,    86,    87,     0,     0,     0,     0,     0,
-     126,    76,    77,    78,    79,    80,    81,     0,     0,     0,
-      82,    83,    84,    85,    86,    87,     0,     0,     0,     0,
-       0,   127,    76,    77,    78,    79,    80,    81,     0,     0,
-       0,    82,    83,    84,    85,    86,    87,     0,     0,   103,
-      76,    77,    78,    79,    80,    81,     0,     0,     0,    82,
-      83,    84,    85,    86,    87,     0,     0,   123,    76,    77,
-      78,    79,    80,    81,     0,     0,     0,    82,    83,    84,
-      85,    86,    87,     0,     0,   124,    76,    77,    78,    79,
-      80,    81,     0,     0,     0,    82,    83,    84,    85,    86,
-      87,     0,     0,   125,    76,    77,    78,    79,    80,    81,
-       0,     0,     0,    82,    83,    84,    85,    86,    87,    76,
-      77,    78,    79,    80,     0,     0,     0,     0,    82,    83,
-      84,    85,    86,    87,    76,    77,    78,    79,     0,     0,
-       0,     0,     0,    82,    83,    84,    85,    86,    87,    78,
-      79,     0,     0,     0,     0,     0,    82,    83,    84,    85,
-      86,    87,     5,     6,     7,     8,    33,    10,     0,    34,
-      35,    36
+      42,    17,    25,     5,     6,     7,     8,    55,    34,     5,
+       6,     7,     8,    26,    34,    66,    35,    36,    37,     3,
+      73,    17,    35,    36,    37,    85,    86,   134,    18,     5,
+       6,     7,     8,     9,    10,    74,    20,    28,    58,    21,
+      94,    68,    38,    97,    98,    99,   100,   135,   158,   105,
+     106,   107,    22,    69,    90,    26,   111,   112,   113,   114,
+     115,   116,   117,   118,   119,   120,   121,   122,    31,    48,
+      49,    50,    51,    52,    53,    27,    91,    70,    71,    28,
+      92,    72,    59,    83,    84,    85,    86,    95,    90,    60,
+      61,    62,    63,    64,    65,    96,    75,    76,    77,    78,
+      54,   104,    66,   109,   123,   124,   125,    67,    81,    82,
+      83,    84,    85,    86,   142,   143,   133,     5,     6,     7,
+       8,   140,    10,   132,    42,   155,   135,    77,    78,   139,
+      42,    75,    76,    77,    78,    79,    80,    81,    82,    83,
+      84,    85,    86,    81,    82,    83,    84,    85,    86,    75,
+      76,    77,    78,    79,    87,    75,    76,    77,    78,    79,
+      80,    81,    82,    83,    84,    85,    86,    81,    82,    83,
+      84,    85,    86,   141,   148,   145,   151,   152,   127,    75,
+      76,    77,    78,    79,    80,     5,     6,     7,     8,   154,
+      34,    81,    82,    83,    84,    85,    86,   156,    35,    36,
+      37,   144,   128,    75,    76,    77,    78,    79,    80,   159,
+     126,   147,   108,    33,   157,    81,    82,    83,    84,    85,
+      86,     0,     0,     0,     0,     0,   129,    75,    76,    77,
+      78,    79,    80,     0,     0,     0,     0,     0,     0,    81,
+      82,    83,    84,    85,    86,     0,     0,     0,     0,     0,
+     130,    75,    76,    77,    78,    79,    80,     0,     0,     0,
+       0,     0,     0,    81,    82,    83,    84,    85,    86,     0,
+       0,     0,     0,     0,   131,    75,    76,    77,    78,    79,
+      80,     0,     0,     0,     0,     0,     0,    81,    82,    83,
+      84,    85,    86,     0,     0,     0,     0,     0,   153,    75,
+      76,    77,    78,    79,    80,     0,     0,     0,     0,     0,
+       0,    81,    82,    83,    84,    85,    86,     0,     0,   110,
+      75,    76,    77,    78,    79,    80,     0,     0,     0,     0,
+       0,     0,    81,    82,    83,    84,    85,    86,     0,     0,
+     136,    75,    76,    77,    78,    79,    80,     0,     0,     0,
+       0,     0,     0,    81,    82,    83,    84,    85,    86,     0,
+       0,   137,    75,    76,    77,    78,    79,    80,     0,     0,
+       0,     0,     0,     0,    81,    82,    83,    84,    85,    86,
+       0,     0,   138,    75,    76,    77,    78,    79,    80,     0,
+       0,     0,     0,     0,     0,    81,    82,    83,    84,    85,
+      86,     5,     6,     7,     8,     9,    10,     0,     0,     0,
+       0,     0,    11,    12
 };
 
 static const yytype_int16 yycheck[] =
 {
-      25,    25,    36,    26,    27,     0,    59,    38,    42,     3,
-       4,     5,     6,     7,     8,    19,     8,   135,    19,    11,
-      12,    13,   140,     8,    28,    26,    27,    28,     8,    52,
-      53,    38,    36,    36,    36,     8,    40,    40,    11,    12,
-      13,    40,    65,    66,    67,    39,    69,    39,    36,    72,
-      33,    34,    36,    76,    77,    78,    79,    80,    81,    82,
-      83,    84,    85,    86,    87,   118,    39,     8,    40,    19,
-       8,     8,     8,    14,    15,    16,    17,    18,    28,     3,
-       4,     5,     6,     7,     8,     9,    10,    41,    37,   142,
-      40,    32,    37,    41,    36,    36,    40,     8,   121,    38,
-       8,    20,    21,    22,    23,    24,    25,    38,    37,    39,
-      29,    30,    31,    32,    33,    34,    37,    39,    38,   144,
-     144,    40,    31,    32,    33,    34,    32,   152,   152,    20,
-      21,    22,    23,    24,    25,   155,   142,   158,    29,    30,
-      31,    32,    33,    34,     3,     4,     5,     6,   124,    40,
-      20,    21,    22,    23,    24,    25,   122,    -1,    -1,    29,
-      30,    31,    32,    33,    34,    -1,    -1,    -1,    -1,    -1,
+      25,     4,    22,     3,     4,     5,     6,    26,     8,     3,
+       4,     5,     6,    19,     8,    39,    16,    17,    18,     0,
+      44,    24,    16,    17,    18,    36,    37,    19,     8,     3,
+       4,     5,     6,     7,     8,    54,     8,    43,     8,    41,
+      59,    39,    42,    62,    63,    64,    65,    39,    42,    68,
+      69,    70,    41,    39,    57,    19,    75,    76,    77,    78,
+      79,    80,    81,    82,    83,    84,    85,    86,    42,     8,
+       9,    10,    11,    12,    13,    39,    39,    39,    43,    43,
+      43,     8,    19,    34,    35,    36,    37,    43,    91,    26,
+      27,    28,    29,    30,    31,    43,    20,    21,    22,    23,
+      39,     8,    39,     8,    40,    45,     8,    44,    32,    33,
+      34,    35,    36,    37,   133,   134,    45,     3,     4,     5,
+       6,   124,     8,    40,   149,   145,    39,    22,    23,    41,
+     155,    20,    21,    22,    23,    24,    25,    32,    33,    34,
+      35,    36,    37,    32,    33,    34,    35,    36,    37,    20,
+      21,    22,    23,    24,    43,    20,    21,    22,    23,    24,
+      25,    32,    33,    34,    35,    36,    37,    32,    33,    34,
+      35,    36,    37,    40,    43,    41,     8,    41,    43,    20,
+      21,    22,    23,    24,    25,     3,     4,     5,     6,    40,
+       8,    32,    33,    34,    35,    36,    37,    42,    16,    17,
+      18,   135,    43,    20,    21,    22,    23,    24,    25,    42,
+      91,   137,    72,    24,   152,    32,    33,    34,    35,    36,
+      37,    -1,    -1,    -1,    -1,    -1,    43,    20,    21,    22,
+      23,    24,    25,    -1,    -1,    -1,    -1,    -1,    -1,    32,
+      33,    34,    35,    36,    37,    -1,    -1,    -1,    -1,    -1,
+      43,    20,    21,    22,    23,    24,    25,    -1,    -1,    -1,
+      -1,    -1,    -1,    32,    33,    34,    35,    36,    37,    -1,
+      -1,    -1,    -1,    -1,    43,    20,    21,    22,    23,    24,
+      25,    -1,    -1,    -1,    -1,    -1,    -1,    32,    33,    34,
+      35,    36,    37,    -1,    -1,    -1,    -1,    -1,    43,    20,
+      21,    22,    23,    24,    25,    -1,    -1,    -1,    -1,    -1,
+      -1,    32,    33,    34,    35,    36,    37,    -1,    -1,    40,
+      20,    21,    22,    23,    24,    25,    -1,    -1,    -1,    -1,
+      -1,    -1,    32,    33,    34,    35,    36,    37,    -1,    -1,
       40,    20,    21,    22,    23,    24,    25,    -1,    -1,    -1,
-      29,    30,    31,    32,    33,    34,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    32,    33,    34,    35,    36,    37,    -1,
       -1,    40,    20,    21,    22,    23,    24,    25,    -1,    -1,
-      -1,    29,    30,    31,    32,    33,    34,    -1,    -1,    37,
-      20,    21,    22,    23,    24,    25,    -1,    -1,    -1,    29,
-      30,    31,    32,    33,    34,    -1,    -1,    37,    20,    21,
-      22,    23,    24,    25,    -1,    -1,    -1,    29,    30,    31,
-      32,    33,    34,    -1,    -1,    37,    20,    21,    22,    23,
-      24,    25,    -1,    -1,    -1,    29,    30,    31,    32,    33,
-      34,    -1,    -1,    37,    20,    21,    22,    23,    24,    25,
-      -1,    -1,    -1,    29,    30,    31,    32,    33,    34,    20,
-      21,    22,    23,    24,    -1,    -1,    -1,    -1,    29,    30,
-      31,    32,    33,    34,    20,    21,    22,    23,    -1,    -1,
-      -1,    -1,    -1,    29,    30,    31,    32,    33,    34,    22,
-      23,    -1,    -1,    -1,    -1,    -1,    29,    30,    31,    32,
-      33,    34,     3,     4,     5,     6,     8,     8,    -1,    11,
-      12,    13
+      -1,    -1,    -1,    -1,    32,    33,    34,    35,    36,    37,
+      -1,    -1,    40,    20,    21,    22,    23,    24,    25,    -1,
+      -1,    -1,    -1,    -1,    -1,    32,    33,    34,    35,    36,
+      37,     3,     4,     5,     6,     7,     8,    -1,    -1,    -1,
+      -1,    -1,    14,    15
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,    44,    45,     0,    46,     3,     4,     5,     6,     7,
-       8,     9,    10,    47,    51,    53,    58,    67,     8,    68,
-       8,    54,    38,    48,    38,    69,    19,    28,    36,    40,
-      49,    66,    55,     8,    11,    12,    13,    39,    70,    71,
-      72,    73,    74,    75,    76,    79,    80,    14,    15,    16,
-      17,    18,    32,    36,    78,    79,    80,    83,    78,    50,
-      39,    56,    58,    36,    42,    36,    36,    36,    40,    19,
-      26,    27,    28,    40,    78,    78,    20,    21,    22,    23,
-      24,    25,    29,    30,    31,    32,    33,    34,    40,    40,
-      51,    61,    62,     8,    78,    81,    82,     8,    78,    78,
-      78,    78,    78,    37,    78,    78,    78,    78,    78,    78,
-      78,    78,    78,    78,    78,    78,     8,    37,    41,    57,
-      37,    41,    36,    37,    37,    37,    40,    40,    38,    51,
-      36,    40,    59,    78,    81,    38,    77,    77,    40,    63,
-      64,     8,    60,    37,    69,    39,     3,     4,     5,     6,
-      52,    65,    69,    61,    39,     8,    37,    66,    38,    63,
-      39
+       0,    47,    48,     0,    49,     3,     4,     5,     6,     7,
+       8,    14,    15,    50,    54,    68,    77,    78,     8,    55,
+       8,    41,    41,    51,    69,    56,    19,    39,    43,    52,
+      76,    42,    70,    77,     8,    16,    17,    18,    42,    57,
+      58,    59,    61,    64,    65,    66,    75,    78,     8,     9,
+      10,    11,    12,    13,    39,    60,    61,    53,     8,    19,
+      26,    27,    28,    29,    30,    31,    39,    44,    39,    39,
+      39,    43,     8,    44,    60,    20,    21,    22,    23,    24,
+      25,    32,    33,    34,    35,    36,    37,    43,    72,    73,
+      78,    39,    43,    71,    60,    43,    43,    60,    60,    60,
+      60,    60,    62,    63,     8,    60,    60,    60,    76,     8,
+      40,    60,    60,    60,    60,    60,    60,    60,    60,    60,
+      60,    60,    60,    40,    45,     8,    72,    43,    43,    43,
+      43,    43,    40,    45,    19,    39,    40,    40,    40,    41,
+      78,    40,    60,    60,    62,    41,    67,    67,    43,    56,
+      74,     8,    41,    43,    40,    56,    42,    74,    42,    42
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    43,    45,    44,    46,    46,    47,    48,    47,    50,
-      49,    49,    51,    51,    51,    51,    51,    52,    52,    52,
-      52,    54,    53,    55,    55,    57,    56,    58,    58,    59,
-      60,    59,    61,    61,    62,    62,    63,    64,    64,    65,
-      66,    66,    66,    68,    67,    69,    69,    70,    70,    70,
-      70,    70,    71,    71,    72,    72,    73,    74,    74,    75,
-      76,    77,    78,    78,    78,    78,    78,    78,    78,    78,
-      78,    78,    78,    78,    78,    78,    78,    78,    78,    79,
-      79,    80,    80,    81,    81,    82,    82,    83,    83,    83,
-      83,    83
+       0,    46,    48,    47,    49,    49,    50,    51,    50,    53,
+      52,    52,    55,    54,    56,    56,    57,    57,    57,    57,
+      57,    57,    57,    57,    57,    57,    57,    58,    58,    59,
+      60,    60,    60,    60,    60,    60,    60,    60,    60,    60,
+      60,    60,    60,    60,    60,    60,    60,    60,    60,    60,
+      60,    61,    61,    62,    62,    63,    63,    64,    64,    65,
+      66,    67,    68,    69,    69,    70,    71,    71,    72,    72,
+      73,    73,    74,    75,    76,    76,    77,    77,    78,    78,
+      78,    78,    78
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
        0,     2,     0,     3,     2,     0,     1,     0,     4,     0,
-       7,     1,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     0,     6,     2,     0,     0,     4,     1,     1,     1,
-       0,     7,     1,     0,     4,     2,     2,     2,     0,     3,
-       1,     3,     3,     0,     5,     2,     0,     1,     1,     1,
-       2,     2,     4,     4,     2,     2,     5,     1,     1,     5,
-       5,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,     3,     3,     3,     3,     2,     1,     1,     1,     1,
-       3,     4,     6,     1,     0,     3,     1,     1,     1,     1,
-       1,     1
+       7,     1,     0,     5,     2,     0,     1,     1,     2,     1,
+       1,     3,     3,     4,     4,     4,     4,     4,     6,     5,
+       3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
+       3,     3,     3,     1,     1,     1,     1,     1,     1,     1,
+       3,     4,     6,     1,     0,     3,     1,     1,     1,     5,
+       5,     3,     5,     2,     0,     3,     1,     6,     1,     0,
+       4,     2,     1,     3,     1,     3,     1,     1,     1,     1,
+       1,     1,     1
 };
 
 
@@ -1098,275 +1209,8 @@ int yydebug;
 #endif
 
 
-/* Context of a parse error.  */
-typedef struct
-{
-  yy_state_t *yyssp;
-  yysymbol_kind_t yytoken;
-} yypcontext_t;
-
-/* Put in YYARG at most YYARGN of the expected tokens given the
-   current YYCTX, and return the number of tokens stored in YYARG.  If
-   YYARG is null, return the number of expected tokens (guaranteed to
-   be less than YYNTOKENS).  Return YYENOMEM on memory exhaustion.
-   Return 0 if there are more than YYARGN expected tokens, yet fill
-   YYARG up to YYARGN. */
-static int
-yypcontext_expected_tokens (const yypcontext_t *yyctx,
-                            yysymbol_kind_t yyarg[], int yyargn)
-{
-  /* Actual size of YYARG. */
-  int yycount = 0;
-  int yyn = yypact[+*yyctx->yyssp];
-  if (!yypact_value_is_default (yyn))
-    {
-      /* Start YYX at -YYN if negative to avoid negative indexes in
-         YYCHECK.  In other words, skip the first -YYN actions for
-         this state because they are default actions.  */
-      int yyxbegin = yyn < 0 ? -yyn : 0;
-      /* Stay within bounds of both yycheck and yytname.  */
-      int yychecklim = YYLAST - yyn + 1;
-      int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
-      int yyx;
-      for (yyx = yyxbegin; yyx < yyxend; ++yyx)
-        if (yycheck[yyx + yyn] == yyx && yyx != YYSYMBOL_YYerror
-            && !yytable_value_is_error (yytable[yyx + yyn]))
-          {
-            if (!yyarg)
-              ++yycount;
-            else if (yycount == yyargn)
-              return 0;
-            else
-              yyarg[yycount++] = YY_CAST (yysymbol_kind_t, yyx);
-          }
-    }
-  if (yyarg && yycount == 0 && 0 < yyargn)
-    yyarg[0] = YYSYMBOL_YYEMPTY;
-  return yycount;
-}
 
 
-
-
-#ifndef yystrlen
-# if defined __GLIBC__ && defined _STRING_H
-#  define yystrlen(S) (YY_CAST (YYPTRDIFF_T, strlen (S)))
-# else
-/* Return the length of YYSTR.  */
-static YYPTRDIFF_T
-yystrlen (const char *yystr)
-{
-  YYPTRDIFF_T yylen;
-  for (yylen = 0; yystr[yylen]; yylen++)
-    continue;
-  return yylen;
-}
-# endif
-#endif
-
-#ifndef yystpcpy
-# if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
-#  define yystpcpy stpcpy
-# else
-/* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
-   YYDEST.  */
-static char *
-yystpcpy (char *yydest, const char *yysrc)
-{
-  char *yyd = yydest;
-  const char *yys = yysrc;
-
-  while ((*yyd++ = *yys++) != '\0')
-    continue;
-
-  return yyd - 1;
-}
-# endif
-#endif
-
-#ifndef yytnamerr
-/* Copy to YYRES the contents of YYSTR after stripping away unnecessary
-   quotes and backslashes, so that it's suitable for yyerror.  The
-   heuristic is that double-quoting is unnecessary unless the string
-   contains an apostrophe, a comma, or backslash (other than
-   backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
-   null, do not copy; instead, return the length of what the result
-   would have been.  */
-static YYPTRDIFF_T
-yytnamerr (char *yyres, const char *yystr)
-{
-  if (*yystr == '"')
-    {
-      YYPTRDIFF_T yyn = 0;
-      char const *yyp = yystr;
-      for (;;)
-        switch (*++yyp)
-          {
-          case '\'':
-          case ',':
-            goto do_not_strip_quotes;
-
-          case '\\':
-            if (*++yyp != '\\')
-              goto do_not_strip_quotes;
-            else
-              goto append;
-
-          append:
-          default:
-            if (yyres)
-              yyres[yyn] = *yyp;
-            yyn++;
-            break;
-
-          case '"':
-            if (yyres)
-              yyres[yyn] = '\0';
-            return yyn;
-          }
-    do_not_strip_quotes: ;
-    }
-
-  if (yyres)
-    return yystpcpy (yyres, yystr) - yyres;
-  else
-    return yystrlen (yystr);
-}
-#endif
-
-
-static int
-yy_syntax_error_arguments (const yypcontext_t *yyctx,
-                           yysymbol_kind_t yyarg[], int yyargn)
-{
-  /* Actual size of YYARG. */
-  int yycount = 0;
-  /* There are many possibilities here to consider:
-     - If this state is a consistent state with a default action, then
-       the only way this function was invoked is if the default action
-       is an error action.  In that case, don't check for expected
-       tokens because there are none.
-     - The only way there can be no lookahead present (in yychar) is if
-       this state is a consistent state with a default action.  Thus,
-       detecting the absence of a lookahead is sufficient to determine
-       that there is no unexpected or expected token to report.  In that
-       case, just report a simple "syntax error".
-     - Don't assume there isn't a lookahead just because this state is a
-       consistent state with a default action.  There might have been a
-       previous inconsistent state, consistent state with a non-default
-       action, or user semantic action that manipulated yychar.
-     - Of course, the expected token list depends on states to have
-       correct lookahead information, and it depends on the parser not
-       to perform extra reductions after fetching a lookahead from the
-       scanner and before detecting a syntax error.  Thus, state merging
-       (from LALR or IELR) and default reductions corrupt the expected
-       token list.  However, the list is correct for canonical LR with
-       one exception: it will still contain any token that will not be
-       accepted due to an error action in a later state.
-  */
-  if (yyctx->yytoken != YYSYMBOL_YYEMPTY)
-    {
-      int yyn;
-      if (yyarg)
-        yyarg[yycount] = yyctx->yytoken;
-      ++yycount;
-      yyn = yypcontext_expected_tokens (yyctx,
-                                        yyarg ? yyarg + 1 : yyarg, yyargn - 1);
-      if (yyn == YYENOMEM)
-        return YYENOMEM;
-      else
-        yycount += yyn;
-    }
-  return yycount;
-}
-
-/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
-   about the unexpected token YYTOKEN for the state stack whose top is
-   YYSSP.
-
-   Return 0 if *YYMSG was successfully written.  Return -1 if *YYMSG is
-   not large enough to hold the message.  In that case, also set
-   *YYMSG_ALLOC to the required number of bytes.  Return YYENOMEM if the
-   required number of bytes is too large to store.  */
-static int
-yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
-                const yypcontext_t *yyctx)
-{
-  enum { YYARGS_MAX = 5 };
-  /* Internationalized format string. */
-  const char *yyformat = YY_NULLPTR;
-  /* Arguments of yyformat: reported tokens (one for the "unexpected",
-     one per "expected"). */
-  yysymbol_kind_t yyarg[YYARGS_MAX];
-  /* Cumulated lengths of YYARG.  */
-  YYPTRDIFF_T yysize = 0;
-
-  /* Actual size of YYARG. */
-  int yycount = yy_syntax_error_arguments (yyctx, yyarg, YYARGS_MAX);
-  if (yycount == YYENOMEM)
-    return YYENOMEM;
-
-  switch (yycount)
-    {
-#define YYCASE_(N, S)                       \
-      case N:                               \
-        yyformat = S;                       \
-        break
-    default: /* Avoid compiler warnings. */
-      YYCASE_(0, YY_("syntax error"));
-      YYCASE_(1, YY_("syntax error, unexpected %s"));
-      YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
-      YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
-      YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
-      YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
-#undef YYCASE_
-    }
-
-  /* Compute error message size.  Don't count the "%s"s, but reserve
-     room for the terminator.  */
-  yysize = yystrlen (yyformat) - 2 * yycount + 1;
-  {
-    int yyi;
-    for (yyi = 0; yyi < yycount; ++yyi)
-      {
-        YYPTRDIFF_T yysize1
-          = yysize + yytnamerr (YY_NULLPTR, yytname[yyarg[yyi]]);
-        if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
-          yysize = yysize1;
-        else
-          return YYENOMEM;
-      }
-  }
-
-  if (*yymsg_alloc < yysize)
-    {
-      *yymsg_alloc = 2 * yysize;
-      if (! (yysize <= *yymsg_alloc
-             && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
-        *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
-      return -1;
-    }
-
-  /* Avoid sprintf, as that infringes on the user's name space.
-     Don't have undefined behavior even if the translation
-     produced a string with the wrong number of "%s"s.  */
-  {
-    char *yyp = *yymsg;
-    int yyi = 0;
-    while ((*yyp = *yyformat) != '\0')
-      if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
-        {
-          yyp += yytnamerr (yyp, yytname[yyarg[yyi++]]);
-          yyformat += 2;
-        }
-      else
-        {
-          ++yyp;
-          ++yyformat;
-        }
-  }
-  return 0;
-}
 
 
 /*-----------------------------------------------.
@@ -1435,10 +1279,7 @@ yyparse (void)
      action routines.  */
   YYSTYPE yyval;
 
-  /* Buffer for error messages, and its allocated size.  */
-  char yymsgbuf[128];
-  char *yymsg = yymsgbuf;
-  YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
+
 
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N))
 
@@ -1649,615 +1490,404 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* $@1: %empty  */
-#line 133 "maestro.y"
-    { 
-        globalScope = new SymbolTable("Global Scope"); 
-        currentScope = globalScope; 
+#line 230 "maestro.y"
+         { globalScope = new SymbolTable("Global Scope"); currentScope = globalScope; }
+#line 1496 "maestro.tab.c"
+    break;
+
+  case 3: /* program: $@1 global_elements finale_block  */
+#line 231 "maestro.y"
+                                 { currentScope->printTable(tableFile); std::cout << "Sintassi Corretta!\n"; }
+#line 1502 "maestro.tab.c"
+    break;
+
+  case 7: /* $@2: %empty  */
+#line 236 "maestro.y"
+                                             { currentType = (yyvsp[-1].stringValue); currentName = (yyvsp[0].stringValue); }
+#line 1508 "maestro.tab.c"
+    break;
+
+  case 9: /* $@3: %empty  */
+#line 238 "maestro.y"
+                        { 
+        currentScope->addSymbol(currentName, currentType, "function");
+        currentScope = new SymbolTable("Function: " + currentName, currentScope); 
+    }
+#line 1517 "maestro.tab.c"
+    break;
+
+  case 10: /* global_decl_suffix: '(' $@3 param_list ')' '{' func_body '}'  */
+#line 241 "maestro.y"
+                                       { currentScope->printTable(tableFile); currentScope = currentScope->parent; }
+#line 1523 "maestro.tab.c"
+    break;
+
+  case 11: /* global_decl_suffix: var_decl_suffix  */
+#line 242 "maestro.y"
+                      { currentScope->addSymbol(currentName, currentType, "global_var"); }
+#line 1529 "maestro.tab.c"
+    break;
+
+  case 12: /* $@4: %empty  */
+#line 245 "maestro.y"
+                       { currentScope = new SymbolTable("Main Function", currentScope); }
+#line 1535 "maestro.tab.c"
+    break;
+
+  case 13: /* finale_block: TOK_MAIN $@4 '{' stmt_list_pure '}'  */
+#line 246 "maestro.y"
+                           { 
+        for (ASTNode* node : *(yyvsp[-1].astList)) if (node) node->evaluate(); // Evaluate Main Block [cite: 1, 48]
+        currentScope->printTable(tableFile); currentScope = currentScope->parent; 
+    }
+#line 1544 "maestro.tab.c"
+    break;
+
+  case 14: /* stmt_list_pure: stmt_list_pure statement  */
+#line 252 "maestro.y"
+                                         { (yyvsp[-1].astList)->push_back((yyvsp[0].astNode)); (yyval.astList) = (yyvsp[-1].astList); }
+#line 1550 "maestro.tab.c"
+    break;
+
+  case 15: /* stmt_list_pure: %empty  */
+#line 252 "maestro.y"
+                                                                           { (yyval.astList) = new std::vector<ASTNode*>(); }
+#line 1556 "maestro.tab.c"
+    break;
+
+  case 16: /* statement: assignment_stmt  */
+#line 255 "maestro.y"
+                      { (yyval.astNode) = (yyvsp[0].astNode); }
+#line 1562 "maestro.tab.c"
+    break;
+
+  case 17: /* statement: print_stmt  */
+#line 256 "maestro.y"
+                 { (yyval.astNode) = (yyvsp[0].astNode); }
+#line 1568 "maestro.tab.c"
+    break;
+
+  case 18: /* statement: func_call ';'  */
+#line 257 "maestro.y"
+                    { (yyval.astNode) = nullptr; }
+#line 1574 "maestro.tab.c"
+    break;
+
+  case 19: /* statement: control_stmt  */
+#line 258 "maestro.y"
+                   { (yyval.astNode) = nullptr; }
+#line 1580 "maestro.tab.c"
+    break;
+
+  case 20: /* statement: var_decl  */
+#line 259 "maestro.y"
+               { (yyval.astNode) = nullptr; }
+#line 1586 "maestro.tab.c"
+    break;
+
+  case 21: /* statement: TOK_ID TOK_INC ';'  */
+#line 260 "maestro.y"
+                         { 
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-2].stringValue); 
+        
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "+";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-2].stringValue);
+        ASTNode* litNode = new ASTNode(NODE_LITERAL); litNode->literalValue.type = "basso"; litNode->literalValue.iVal = 1;
+
+        opNode->left = idNode; opNode->right = litNode;
+        (yyval.astNode)->right = opNode;
+    }
+#line 1601 "maestro.tab.c"
+    break;
+
+  case 22: /* statement: TOK_ID TOK_DEC ';'  */
+#line 271 "maestro.y"
+                         { 
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-2].stringValue); 
+        
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "-";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-2].stringValue);
+        ASTNode* litNode = new ASTNode(NODE_LITERAL); litNode->literalValue.type = "basso"; litNode->literalValue.iVal = 1;
+
+        opNode->left = idNode; opNode->right = litNode;
+        (yyval.astNode)->right = opNode;
+    }
+#line 1616 "maestro.tab.c"
+    break;
+
+  case 23: /* statement: TOK_ID TOK_PLUS_ASSIGN expression ';'  */
+#line 282 "maestro.y"
+                                            {
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "+";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-3].stringValue);
+
+        opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
+        (yyval.astNode)->right = opNode;
+    }
+#line 1630 "maestro.tab.c"
+    break;
+
+  case 24: /* statement: TOK_ID TOK_MINUS_ASSIGN expression ';'  */
+#line 292 "maestro.y"
+                                             {
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "-";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-3].stringValue);
+
+        opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
+        (yyval.astNode)->right = opNode;
+    }
+#line 1644 "maestro.tab.c"
+    break;
+
+  case 25: /* statement: TOK_ID TOK_MUL_ASSIGN expression ';'  */
+#line 302 "maestro.y"
+                                           {
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "*";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-3].stringValue);
+
+        opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
+        (yyval.astNode)->right = opNode;
     }
 #line 1658 "maestro.tab.c"
     break;
 
-  case 3: /* program: $@1 global_elements finale_block  */
-#line 138 "maestro.y"
-    { 
-        currentScope->printTable(tableFile); 
-        std::cout << "Sintassi Corretta!\n"; 
+  case 26: /* statement: TOK_ID TOK_DIV_ASSIGN expression ';'  */
+#line 312 "maestro.y"
+                                           {
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "/";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = (yyvsp[-3].stringValue);
+
+        opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
+        (yyval.astNode)->right = opNode;
     }
-#line 1667 "maestro.tab.c"
+#line 1672 "maestro.tab.c"
     break;
 
-  case 7: /* $@2: %empty  */
-#line 149 "maestro.y"
-                                   { 
-        currentType = (yyvsp[-1].stringValue); 
-        currentName = (yyvsp[0].stringValue); 
-    }
-#line 1676 "maestro.tab.c"
-    break;
-
-  case 9: /* $@3: %empty  */
-#line 157 "maestro.y"
-        { 
-        // Incepe o functie
-
-        // Adaugam numele functiei in Global Scope
-        if(!currentScope->addSymbol(currentName, currentType, "function")) { 
-            yyerror(("Symbol" + currentName + "already defined.").c_str()); 
-        }
-
-        // Cream scope ul functiei
-        SymbolTable* functionScope = new SymbolTable("Function: " + currentName, currentScope); 
-        currentScope = functionScope; 
-    }
-#line 1693 "maestro.tab.c"
-    break;
-
-  case 10: /* global_decl_suffix: '(' $@3 param_list ')' '{' func_body '}'  */
-#line 169 "maestro.y"
+  case 27: /* assignment_stmt: TOK_ID TOK_ASSIGN expression ';'  */
+#line 324 "maestro.y"
                                      { 
-        // Finalul functiei - printam tabela si revenim la parinte 
-        currentScope->printTable(tableFile); 
-        currentScope = currentScope->parent; 
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue); (yyval.astNode)->right = (yyvsp[-1].astNode); 
     }
-#line 1703 "maestro.tab.c"
+#line 1680 "maestro.tab.c"
     break;
 
-  case 11: /* global_decl_suffix: var_decl_suffix  */
-#line 174 "maestro.y"
-                    { 
-        // Daca ajungem aici inseamna da declaratia este o variabila globala (o adaugam in scope)
-        if(!currentScope->addSymbol(currentName, currentType, "global_var")) { 
-            yyerror(("Symbol" + currentName + "already defined.").c_str()); 
-        }
+  case 28: /* assignment_stmt: TOK_ID '.' TOK_ID TOK_ASSIGN expression ';'  */
+#line 327 "maestro.y"
+                                                  {
+        (yyval.astNode) = new ASTNode(NODE_ASSIGN);
+        (yyval.astNode)->idName = std::string((yyvsp[-5].stringValue)) + "." + std::string((yyvsp[-3].stringValue));
+        (yyval.astNode)->right = (yyvsp[-1].astNode);
     }
-#line 1714 "maestro.tab.c"
+#line 1690 "maestro.tab.c"
     break;
 
-  case 12: /* data_type: TOK_TYPE_INT  */
-#line 185 "maestro.y"
-                 { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1720 "maestro.tab.c"
-    break;
-
-  case 13: /* data_type: TOK_TYPE_FLOAT  */
-#line 186 "maestro.y"
-                   { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1726 "maestro.tab.c"
-    break;
-
-  case 14: /* data_type: TOK_TYPE_STRING  */
-#line 187 "maestro.y"
-                    { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1732 "maestro.tab.c"
-    break;
-
-  case 15: /* data_type: TOK_TYPE_BOOL  */
-#line 188 "maestro.y"
-                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1738 "maestro.tab.c"
-    break;
-
-  case 16: /* data_type: TOK_ID  */
-#line 189 "maestro.y"
-           { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1744 "maestro.tab.c"
-    break;
-
-  case 17: /* simple_type: TOK_TYPE_INT  */
-#line 193 "maestro.y"
-                 { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1750 "maestro.tab.c"
-    break;
-
-  case 18: /* simple_type: TOK_TYPE_FLOAT  */
-#line 194 "maestro.y"
-                   { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1756 "maestro.tab.c"
-    break;
-
-  case 19: /* simple_type: TOK_TYPE_STRING  */
-#line 195 "maestro.y"
-                    { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1762 "maestro.tab.c"
-    break;
-
-  case 20: /* simple_type: TOK_TYPE_BOOL  */
-#line 196 "maestro.y"
-                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1768 "maestro.tab.c"
-    break;
-
-  case 21: /* $@4: %empty  */
-#line 200 "maestro.y"
-                     { 
-        std::string className = (yyvsp[0].stringValue); 
-        currentScope->addSymbol(className, "class", "class_def"); 
-
-        // Cream un nou scope pentru clasa
-        SymbolTable* classScope = new SymbolTable("Class: " + className, currentScope); 
-        Symbol* classSymbol = currentScope->findSymbol(className); 
-        if(classSymbol != nullptr) classSymbol->nestedScope = classScope; 
-
-        currentScope = classScope; 
+  case 29: /* print_stmt: TOK_PRINT '(' expression ')' ';'  */
+#line 334 "maestro.y"
+                                             { 
+        (yyval.astNode) = new ASTNode(NODE_PRINT); (yyval.astNode)->left = (yyvsp[-2].astNode);
     }
-#line 1784 "maestro.tab.c"
+#line 1698 "maestro.tab.c"
     break;
 
-  case 22: /* class_decl: TOK_CLASS TOK_ID $@4 '{' class_body '}'  */
-#line 211 "maestro.y"
-                       { 
-        currentScope->printTable(tableFile); 
-        currentScope = currentScope->parent; 
+  case 30: /* expression: expression '+' expression  */
+#line 339 "maestro.y"
+                              { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "+"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1704 "maestro.tab.c"
+    break;
+
+  case 31: /* expression: expression '-' expression  */
+#line 340 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "-"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1710 "maestro.tab.c"
+    break;
+
+  case 32: /* expression: expression '*' expression  */
+#line 341 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "*"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1716 "maestro.tab.c"
+    break;
+
+  case 33: /* expression: expression '/' expression  */
+#line 342 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "/"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1722 "maestro.tab.c"
+    break;
+
+  case 34: /* expression: TOK_ID '.' TOK_ID  */
+#line 344 "maestro.y"
+                        { 
+        (yyval.astNode) = new ASTNode(NODE_ID);
+        (yyval.astNode)->idName = std::string((yyvsp[-2].stringValue)) + "." + std::string((yyvsp[0].stringValue));
     }
-#line 1793 "maestro.tab.c"
+#line 1731 "maestro.tab.c"
     break;
 
-  case 25: /* $@5: %empty  */
-#line 222 "maestro.y"
-                       {
-        currentType = (yyvsp[-1].stringValue); 
-        currentName = (yyvsp[0].stringValue); 
+  case 35: /* expression: expression TOK_EQ expression  */
+#line 349 "maestro.y"
+                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "=="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1737 "maestro.tab.c"
+    break;
+
+  case 36: /* expression: expression TOK_NEQ expression  */
+#line 350 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "!="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1743 "maestro.tab.c"
+    break;
+
+  case 37: /* expression: expression '<' expression  */
+#line 351 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1749 "maestro.tab.c"
+    break;
+
+  case 38: /* expression: expression '>' expression  */
+#line 352 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1755 "maestro.tab.c"
+    break;
+
+  case 39: /* expression: expression TOK_LEQ expression  */
+#line 353 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1761 "maestro.tab.c"
+    break;
+
+  case 40: /* expression: expression TOK_GEQ expression  */
+#line 354 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1767 "maestro.tab.c"
+    break;
+
+  case 41: /* expression: expression TOK_AND expression  */
+#line 356 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "&&"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1773 "maestro.tab.c"
+    break;
+
+  case 42: /* expression: expression TOK_OR expression  */
+#line 357 "maestro.y"
+                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "||"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1779 "maestro.tab.c"
+    break;
+
+  case 43: /* expression: LIT_INT  */
+#line 359 "maestro.y"
+              { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "basso"; (yyval.astNode)->literalValue.iVal = atoi((yyvsp[0].stringValue)); }
+#line 1785 "maestro.tab.c"
+    break;
+
+  case 44: /* expression: LIT_FLOAT  */
+#line 360 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "soprano"; (yyval.astNode)->literalValue.fVal = atof((yyvsp[0].stringValue)); }
+#line 1791 "maestro.tab.c"
+    break;
+
+  case 45: /* expression: LIT_STRING  */
+#line 361 "maestro.y"
+                 { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "libretto"; (yyval.astNode)->literalValue.sVal = (yyvsp[0].stringValue); }
+#line 1797 "maestro.tab.c"
+    break;
+
+  case 46: /* expression: TOK_TRUE  */
+#line 362 "maestro.y"
+               { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = true; }
+#line 1803 "maestro.tab.c"
+    break;
+
+  case 47: /* expression: TOK_FALSE  */
+#line 363 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = false; }
+#line 1809 "maestro.tab.c"
+    break;
+
+  case 48: /* expression: TOK_ID  */
+#line 364 "maestro.y"
+             { (yyval.astNode) = new ASTNode(NODE_ID); (yyval.astNode)->idName = (yyvsp[0].stringValue); }
+#line 1815 "maestro.tab.c"
+    break;
+
+  case 49: /* expression: func_call  */
+#line 365 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_OTHER); (yyval.astNode)->exprType = "unknown"; }
+#line 1821 "maestro.tab.c"
+    break;
+
+  case 50: /* expression: '(' expression ')'  */
+#line 366 "maestro.y"
+                         { (yyval.astNode) = (yyvsp[-1].astNode); }
+#line 1827 "maestro.tab.c"
+    break;
+
+  case 51: /* func_call: TOK_ID '(' args_list ')'  */
+#line 370 "maestro.y"
+                             { 
+        (yyval.astNode) = new ASTNode(NODE_OTHER); 
+        (yyval.astNode)->idName = (yyvsp[-3].stringValue); 
     }
-#line 1802 "maestro.tab.c"
+#line 1836 "maestro.tab.c"
     break;
 
-  case 27: /* return_type: data_type  */
-#line 230 "maestro.y"
-              { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1808 "maestro.tab.c"
-    break;
-
-  case 28: /* return_type: TOK_TYPE_VOID  */
-#line 231 "maestro.y"
-                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 1814 "maestro.tab.c"
-    break;
-
-  case 29: /* class_member_suffix: ';'  */
-#line 235 "maestro.y"
-        { 
-        currentScope->addSymbol(currentName, currentType, "field"); 
-    }
-#line 1822 "maestro.tab.c"
-    break;
-
-  case 30: /* $@6: %empty  */
-#line 238 "maestro.y"
-        { 
-        // Metoda a clasei
-        currentScope->addSymbol(currentName, currentType, "method"); 
-
-        // Cream scope ul metodei
-        SymbolTable* methodScope = new SymbolTable("Method: " + currentName, currentScope); 
-        currentScope = methodScope; 
-    }
-#line 1835 "maestro.tab.c"
-    break;
-
-  case 31: /* class_member_suffix: '(' $@6 param_list ')' '{' func_body '}'  */
-#line 246 "maestro.y"
-                                     { 
-        currentScope->printTable(tableFile); 
-        currentScope = currentScope->parent; 
-    }
-#line 1844 "maestro.tab.c"
-    break;
-
-  case 34: /* non_empty_params: non_empty_params ',' data_type TOK_ID  */
-#line 259 "maestro.y"
+  case 52: /* func_call: TOK_ID '.' TOK_ID '(' args_list ')'  */
+#line 374 "maestro.y"
                                           { 
-        currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
-        currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
+        (yyval.astNode) = new ASTNode(NODE_OTHER); 
+        (yyval.astNode)->idName = std::string((yyvsp[-5].stringValue)) + "." + std::string((yyvsp[-3].stringValue)); 
     }
-#line 1853 "maestro.tab.c"
+#line 1845 "maestro.tab.c"
     break;
 
-  case 35: /* non_empty_params: data_type TOK_ID  */
-#line 263 "maestro.y"
-                     { 
-        currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
-        currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
-    }
-#line 1862 "maestro.tab.c"
+  case 53: /* args_list: non_empty_args  */
+#line 380 "maestro.y"
+                          { (yyval.astList) = (yyvsp[0].astList); }
+#line 1851 "maestro.tab.c"
     break;
 
-  case 39: /* var_decl: simple_type TOK_ID var_decl_suffix  */
-#line 278 "maestro.y"
-                                       { 
-        if(!currentScope->addSymbol((yyvsp[-1].stringValue), (yyvsp[-2].stringValue), "local_var")) { 
-            yyerror(("Variable" + std::string((yyvsp[-1].stringValue)) + "redeclared!").c_str()); 
-        }
-    }
-#line 1872 "maestro.tab.c"
+  case 54: /* args_list: %empty  */
+#line 381 "maestro.y"
+      { (yyval.astList) = new std::vector<ASTNode*>(); }
+#line 1857 "maestro.tab.c"
     break;
 
-  case 43: /* $@7: %empty  */
-#line 293 "maestro.y"
-             { 
-        SymbolTable* mainScope = new SymbolTable("Main Function", currentScope);
-        currentScope = mainScope; 
-    }
+  case 55: /* non_empty_args: non_empty_args ',' expression  */
+#line 383 "maestro.y"
+                                              { (yyvsp[-2].astList)->push_back((yyvsp[0].astNode)); (yyval.astList) = (yyvsp[-2].astList); }
+#line 1863 "maestro.tab.c"
+    break;
+
+  case 56: /* non_empty_args: expression  */
+#line 384 "maestro.y"
+                 { (yyval.astList) = new std::vector<ASTNode*>(); (yyval.astList)->push_back((yyvsp[0].astNode)); }
+#line 1869 "maestro.tab.c"
+    break;
+
+  case 59: /* if_stmt: TOK_IF '(' expression ')' block_pure  */
+#line 388 "maestro.y"
+                                              { (yyval.astNode) = nullptr; }
+#line 1875 "maestro.tab.c"
+    break;
+
+  case 60: /* while_stmt: TOK_WHILE '(' expression ')' block_pure  */
+#line 390 "maestro.y"
+                                                    { (yyval.astNode) = nullptr; }
 #line 1881 "maestro.tab.c"
     break;
 
-  case 44: /* finale_block: TOK_MAIN $@7 '{' stmt_list_pure '}'  */
-#line 297 "maestro.y"
-                           { 
-        currentScope->printTable(tableFile); 
-        currentScope = currentScope->parent; 
-    }
-#line 1890 "maestro.tab.c"
-    break;
-
-  case 52: /* assignment_stmt: lvalue TOK_ASSIGN expression ';'  */
-#line 318 "maestro.y"
-                                     { 
-        // $1 = numele variabilei 
-        // $3 = tipul expresiei
-
-        // Verificam daca a fost declarata variabila 
-        Symbol* symbol = currentScope->findSymbol((yyvsp[-3].stringValue));
-        if(symbol == nullptr) { 
-            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str());
-            exit(1); 
-        }
-
-        // Verificam daca tipurile coincid 
-        if(strcmp(symbol->type.c_str(), (yyvsp[-1].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string((yyvsp[-1].stringValue)) + " la o variabila de tip" + symbol->type).c_str());
-            exit(1); 
-        }
-    }
-#line 1912 "maestro.tab.c"
-    break;
-
-  case 53: /* assignment_stmt: lvalue TOK_PLUS_ASSIGN expression ';'  */
-#line 335 "maestro.y"
-                                          { 
-        // $1 = numele variabilei 
-        // $3 = tipul expresiei
-
-        // Verificam daca a fost declarata variabila 
-        Symbol* symbol = currentScope->findSymbol((yyvsp[-3].stringValue));
-        if(symbol == nullptr) { 
-            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str());
-            exit(1); 
-        }
-
-        // Verificam daca tipurile coincid 
-        if(strcmp(symbol->type.c_str(), (yyvsp[-1].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti atribui un " + std::string((yyvsp[-1].stringValue)) + " la o variabila de tip" + symbol->type).c_str());
-            exit(1); 
-        }
-    }
-#line 1934 "maestro.tab.c"
-    break;
-
-  case 62: /* expression: expression '+' expression  */
-#line 380 "maestro.y"
-                              { 
-        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti aduna " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
-            exit(1); 
-        }
-
-        (yyval.stringValue) = (yyvsp[-2].stringValue); 
-    }
-#line 1947 "maestro.tab.c"
-    break;
-
-  case 63: /* expression: expression '-' expression  */
-#line 388 "maestro.y"
-                                { 
-        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti face scadere intre un " + std::string((yyvsp[-2].stringValue)) + " si un " + std::string((yyvsp[0].stringValue))).c_str());
-            exit(1); 
-        }
-
-        (yyval.stringValue) = (yyvsp[-2].stringValue); 
-    }
-#line 1960 "maestro.tab.c"
-    break;
-
-  case 64: /* expression: expression '*' expression  */
-#line 396 "maestro.y"
-                                { 
-        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti inmulti " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
-            exit(1); 
-        }
-
-        (yyval.stringValue) = (yyvsp[-2].stringValue); 
-    }
-#line 1973 "maestro.tab.c"
-    break;
-
-  case 65: /* expression: expression '/' expression  */
-#line 404 "maestro.y"
-                                { 
-        if(strcmp((yyvsp[-2].stringValue), (yyvsp[0].stringValue)) != 0) { 
-            yyerror(("[EROARE SEMANTICA] Nu poti imparti " + std::string((yyvsp[-2].stringValue)) + " cu " + std::string((yyvsp[0].stringValue))).c_str());
-            exit(1); 
-        }
-
-        (yyval.stringValue) = (yyvsp[-2].stringValue); 
-    }
-#line 1986 "maestro.tab.c"
-    break;
-
-  case 66: /* expression: expression '<' expression  */
-#line 412 "maestro.y"
-                                { (yyval.stringValue) = strdup("verita"); }
-#line 1992 "maestro.tab.c"
-    break;
-
-  case 67: /* expression: expression '>' expression  */
-#line 413 "maestro.y"
-                                { (yyval.stringValue) = strdup("verita"); }
-#line 1998 "maestro.tab.c"
-    break;
-
-  case 68: /* expression: expression TOK_LEQ expression  */
-#line 414 "maestro.y"
-                                    { (yyval.stringValue) = strdup("verita"); }
-#line 2004 "maestro.tab.c"
-    break;
-
-  case 69: /* expression: expression TOK_GEQ expression  */
-#line 415 "maestro.y"
-                                    { (yyval.stringValue) = strdup("verita"); }
-#line 2010 "maestro.tab.c"
-    break;
-
-  case 70: /* expression: expression TOK_EQ expression  */
-#line 416 "maestro.y"
-                                   { (yyval.stringValue) = strdup("verita"); }
-#line 2016 "maestro.tab.c"
-    break;
-
-  case 71: /* expression: expression TOK_NEQ expression  */
-#line 417 "maestro.y"
-                                    { (yyval.stringValue) = strdup("verita"); }
-#line 2022 "maestro.tab.c"
-    break;
-
-  case 72: /* expression: expression TOK_AND expression  */
-#line 418 "maestro.y"
-                                    { (yyval.stringValue) = strdup("verita"); }
-#line 2028 "maestro.tab.c"
-    break;
-
-  case 73: /* expression: expression TOK_OR expression  */
-#line 419 "maestro.y"
-                                   { (yyval.stringValue) = strdup("verita"); }
-#line 2034 "maestro.tab.c"
-    break;
-
-  case 74: /* expression: '(' expression ')'  */
-#line 420 "maestro.y"
-                         { (yyval.stringValue) = (yyvsp[-1].stringValue); }
-#line 2040 "maestro.tab.c"
-    break;
-
-  case 75: /* expression: '-' expression  */
-#line 421 "maestro.y"
-                                  { (yyval.stringValue) = (yyvsp[0].stringValue); }
-#line 2046 "maestro.tab.c"
-    break;
-
-  case 76: /* expression: func_call  */
-#line 422 "maestro.y"
-                { (yyval.stringValue) = strdup("unknown"); }
-#line 2052 "maestro.tab.c"
-    break;
-
-  case 77: /* expression: lvalue  */
-#line 423 "maestro.y"
-             { 
-        Symbol* symbol = currentScope->findSymbol((yyvsp[0].stringValue));
-        if(symbol == nullptr) { 
-            yyerror(("[EROARE SEMANTICA] Variabila: " + std::string((yyvsp[0].stringValue)) + " nu este definita!").c_str());
-            exit(1); 
-        }
-
-        (yyval.stringValue) = strdup(symbol->type.c_str()); 
-    }
-#line 2066 "maestro.tab.c"
-    break;
-
-  case 78: /* expression: literal  */
-#line 432 "maestro.y"
-            { 
-        (yyval.stringValue) = (yyvsp[0].stringValue); 
-    }
-#line 2074 "maestro.tab.c"
-    break;
-
-  case 79: /* lvalue: TOK_ID  */
-#line 438 "maestro.y"
-           { 
-        (yyval.stringValue) = (yyvsp[0].stringValue); 
-    }
-#line 2082 "maestro.tab.c"
-    break;
-
-  case 80: /* lvalue: TOK_ID '.' TOK_ID  */
-#line 441 "maestro.y"
-                      { 
-        // Cautam obiectul 
-        Symbol* object = currentScope->findSymbol((yyvsp[-2].stringValue)); 
-        if(object == nullptr) { 
-            yyerror(("[EROARE SEMANTICA] Obiectul " + std::string((yyvsp[-2].stringValue)) + " nu este definit!").c_str());
-            exit(1); 
-        } 
-
-        std::string className = object->type; 
-        Symbol* classSymbol = currentScope->findSymbol(className);
-
-        // verificam daca exista clasa 
-        if(classSymbol == nullptr || classSymbol->kind != "class_def") { 
-            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-2].stringValue)) + " este de tip " + className + ", care nu este o clasa!").c_str());
-            exit(1); 
-        }
-
-        SymbolTable* classScope = classSymbol->nestedScope; 
-        if(classScope->symbols.find((yyvsp[0].stringValue)) == classScope->symbols.end()) { 
-            yyerror(("[EROARE SEMANTICA] Clasa " + className +  " nu are membru " + std::string((yyvsp[0].stringValue))).c_str());
-            exit(1); 
-        }
-
-        Symbol &member = classScope->symbols.at((yyvsp[0].stringValue)); 
-        (yyval.stringValue) = strdup(member.type.c_str()); 
-    }
-#line 2113 "maestro.tab.c"
-    break;
-
-  case 81: /* func_call: TOK_ID '(' args_list ')'  */
-#line 470 "maestro.y"
-                             { 
-        Symbol* function = currentScope->findSymbol((yyvsp[-3].stringValue)); 
-        if(!function) { 
-            yyerror(("[EROARE SEMANTICA] Functia " + std::string((yyvsp[-3].stringValue)) + " nu este definita!").c_str()); 
-            exit(1); 
-        }
-
-        // Verifica numarul de parametri
-        std::vector<std::string>* args = (yyvsp[-1].vectorValue); 
-        if(function->paramTypes.size() != args->size()) { 
-            yyerror(("[EROARE SINTACTICA] Functia " + std::string((yyvsp[-3].stringValue)) + " asteapta " + std::to_string(function->paramTypes.size()) + " argumente, dar i s-au dat " + std::to_string(args->size())).c_str());
-            exit(1); 
-        }
-
-        // Verifica tipul fiecarui parametru
-        for(size_t i = 0; i < args->size(); i++) { 
-            if(function->paramTypes[i] != (*args)[i]) { 
-                yyerror(("[EROARE SINTACTICA] La functia " + std::string((yyvsp[-3].stringValue)) + " , argumentul " + std::to_string(i + 1) + " trebuie sa fie " + function->paramTypes[i] + ", dar a primti" + (*args)[i]).c_str());
-                exit(1);  
-            }
-        }
-
-        (yyval.stringValue) = strdup(function->type.c_str()); 
-        delete args; 
-    }
-#line 2143 "maestro.tab.c"
-    break;
-
-  case 82: /* func_call: TOK_ID '.' TOK_ID '(' args_list ')'  */
-#line 494 "maestro.y"
-                                            { 
-        // Cautam obiectul 
-        Symbol* object = currentScope->findSymbol((yyvsp[-5].stringValue)); 
-        if(object == nullptr) { 
-            yyerror(("[EROARE SEMANTICA] Obiectul " + std::string((yyvsp[-5].stringValue)) + " nu este definit!").c_str());
-            exit(1); 
-        } 
-
-        std::string className = object->type; 
-        Symbol* classSymbol = currentScope->findSymbol(className);
-
-        // verificam daca exista clasa 
-        if(classSymbol == nullptr || classSymbol->kind != "class_def") { 
-            yyerror(("[EROARE SEMANTICA] Variabila " + std::string((yyvsp[-5].stringValue)) + " este de tip " + className + ", care nu este o clasa!").c_str());
-            exit(1); 
-        }
-        
-        SymbolTable* classScope = classSymbol->nestedScope; 
-        if(classScope->symbols.find((yyvsp[-3].stringValue)) == classScope->symbols.end()) { 
-            yyerror(("[EROARE SEMANTICA] Clasa " + className +  " nu are metoda " + std::string((yyvsp[-3].stringValue))).c_str());
-            exit(1); 
-        }
-
-        Symbol& method = classScope->symbols.at((yyvsp[-3].stringValue));
-
-        if(method.kind != "method") { 
-            yyerror(("[EROARE SEMANTICA] " + std::string((yyvsp[-3].stringValue)) + " nu este o metoda a clasei, ci este un camp!").c_str()); 
-            exit(1); 
-        }
-
-        std::vector<std::string>* args = (yyvsp[-1].vectorValue); 
-
-        // Verificarea numarului de argumente
-        if(method.paramTypes.size() != args->size()) { 
-            yyerror(( "[EROARE SINTACTICA] Metoda " + std::string((yyvsp[-3].stringValue)) + " asteapta " + std::to_string(method.paramTypes.size()) + " argumente, dar i s-au dat " + std::to_string(args->size())).c_str());
-            exit(1); 
-        }
-
-        // Verificarea tipului argumentelor
-        for(size_t i = 0; i < args->size(); i++) { 
-            if(method.paramTypes[i] != (*args)[i]) { 
-                yyerror(("[EROARE SEMANTICA] La metoda " + std::string((yyvsp[-3].stringValue)) + ", argumentul " + std::to_string(i + 1) + " trebuie sa fie " + method.paramTypes[i] + ", dar a primit" + (*args)[i]).c_str()); 
-                exit(1); 
-            }
-        }
-
-        (yyval.stringValue) = strdup(method.type.c_str()); 
-        delete args; 
-    }
-#line 2197 "maestro.tab.c"
-    break;
-
-  case 83: /* args_list: non_empty_args  */
-#line 546 "maestro.y"
-                   { (yyval.vectorValue) = (yyvsp[0].vectorValue); }
-#line 2203 "maestro.tab.c"
-    break;
-
-  case 84: /* args_list: %empty  */
-#line 547 "maestro.y"
-        { (yyval.vectorValue) = new std::vector<std::string>(); }
-#line 2209 "maestro.tab.c"
-    break;
-
-  case 85: /* non_empty_args: non_empty_args ',' expression  */
-#line 551 "maestro.y"
-                                  { 
-        (yyvsp[-2].vectorValue)->push_back((yyvsp[0].stringValue)); 
-        (yyval.vectorValue) = (yyvsp[-2].vectorValue); 
-    }
-#line 2218 "maestro.tab.c"
-    break;
-
-  case 86: /* non_empty_args: expression  */
-#line 555 "maestro.y"
-               { 
-        (yyval.vectorValue) = new std::vector<std::string> (); 
-        (yyval.vectorValue)->push_back((yyvsp[0].stringValue)); 
-    }
-#line 2227 "maestro.tab.c"
-    break;
-
-  case 87: /* literal: LIT_INT  */
-#line 562 "maestro.y"
-            { (yyval.stringValue) = strdup("basso"); }
-#line 2233 "maestro.tab.c"
-    break;
-
-  case 88: /* literal: LIT_FLOAT  */
-#line 563 "maestro.y"
-              { (yyval.stringValue) = strdup("soprano"); }
-#line 2239 "maestro.tab.c"
-    break;
-
-  case 89: /* literal: LIT_STRING  */
-#line 564 "maestro.y"
-               { (yyval.stringValue) = strdup("libretto"); }
-#line 2245 "maestro.tab.c"
-    break;
-
-  case 90: /* literal: TOK_TRUE  */
-#line 565 "maestro.y"
-             { (yyval.stringValue) = strdup("verita"); }
-#line 2251 "maestro.tab.c"
-    break;
-
-  case 91: /* literal: TOK_FALSE  */
-#line 566 "maestro.y"
-              { (yyval.stringValue) = strdup("verita"); }
-#line 2257 "maestro.tab.c"
+  case 61: /* block_pure: '{' stmt_list_pure '}'  */
+#line 392 "maestro.y"
+                                   { (yyval.astList) = (yyvsp[-1].astList); }
+#line 1887 "maestro.tab.c"
     break;
 
 
-#line 2261 "maestro.tab.c"
+#line 1891 "maestro.tab.c"
 
       default: break;
     }
@@ -2304,37 +1934,7 @@ yyerrlab:
   if (!yyerrstatus)
     {
       ++yynerrs;
-      {
-        yypcontext_t yyctx
-          = {yyssp, yytoken};
-        char const *yymsgp = YY_("syntax error");
-        int yysyntax_error_status;
-        yysyntax_error_status = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
-        if (yysyntax_error_status == 0)
-          yymsgp = yymsg;
-        else if (yysyntax_error_status == -1)
-          {
-            if (yymsg != yymsgbuf)
-              YYSTACK_FREE (yymsg);
-            yymsg = YY_CAST (char *,
-                             YYSTACK_ALLOC (YY_CAST (YYSIZE_T, yymsg_alloc)));
-            if (yymsg)
-              {
-                yysyntax_error_status
-                  = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
-                yymsgp = yymsg;
-              }
-            else
-              {
-                yymsg = yymsgbuf;
-                yymsg_alloc = sizeof yymsgbuf;
-                yysyntax_error_status = YYENOMEM;
-              }
-          }
-        yyerror (yymsgp);
-        if (yysyntax_error_status == YYENOMEM)
-          YYNOMEM;
-      }
+      yyerror (YY_("syntax error"));
     }
 
   if (yyerrstatus == 3)
@@ -2476,20 +2076,12 @@ yyreturnlab:
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
 #endif
-  if (yymsg != yymsgbuf)
-    YYSTACK_FREE (yymsg);
+
   return yyresult;
 }
 
-#line 567 "maestro.y"
+#line 415 "maestro.y"
 
 
-void yyerror(const char *s) {
-    fprintf(stderr, "Errore di Sintassi line %d: %s\n", yylineno, s);
-    exit(1);
-}
-
-int main() {
-    yyparse();
-    return 0;
-}
+void yyerror(const char *s) { fprintf(stderr, "Error line %d: %s\n", yylineno, s); exit(1); }
+int main() { yyparse(); return 0; }

@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 95 "maestro.y"
+#line 202 "maestro.y"
  
     #include <vector> 
     #include <string> 
@@ -67,16 +67,16 @@ extern int yydebug;
     TOK_TYPE_BOOL = 261,           /* TOK_TYPE_BOOL  */
     TOK_TYPE_VOID = 262,           /* TOK_TYPE_VOID  */
     TOK_ID = 263,                  /* TOK_ID  */
-    TOK_CLASS = 264,               /* TOK_CLASS  */
-    TOK_MAIN = 265,                /* TOK_MAIN  */
-    TOK_IF = 266,                  /* TOK_IF  */
-    TOK_WHILE = 267,               /* TOK_WHILE  */
-    TOK_PRINT = 268,               /* TOK_PRINT  */
-    TOK_TRUE = 269,                /* TOK_TRUE  */
-    TOK_FALSE = 270,               /* TOK_FALSE  */
-    LIT_INT = 271,                 /* LIT_INT  */
-    LIT_FLOAT = 272,               /* LIT_FLOAT  */
-    LIT_STRING = 273,              /* LIT_STRING  */
+    LIT_INT = 264,                 /* LIT_INT  */
+    LIT_FLOAT = 265,               /* LIT_FLOAT  */
+    LIT_STRING = 266,              /* LIT_STRING  */
+    TOK_TRUE = 267,                /* TOK_TRUE  */
+    TOK_FALSE = 268,               /* TOK_FALSE  */
+    TOK_CLASS = 269,               /* TOK_CLASS  */
+    TOK_MAIN = 270,                /* TOK_MAIN  */
+    TOK_IF = 271,                  /* TOK_IF  */
+    TOK_WHILE = 272,               /* TOK_WHILE  */
+    TOK_PRINT = 273,               /* TOK_PRINT  */
     TOK_ASSIGN = 274,              /* TOK_ASSIGN  */
     TOK_EQ = 275,                  /* TOK_EQ  */
     TOK_NEQ = 276,                 /* TOK_NEQ  */
@@ -87,7 +87,10 @@ extern int yydebug;
     TOK_INC = 281,                 /* TOK_INC  */
     TOK_DEC = 282,                 /* TOK_DEC  */
     TOK_PLUS_ASSIGN = 283,         /* TOK_PLUS_ASSIGN  */
-    UMINUS = 284                   /* UMINUS  */
+    TOK_MINUS_ASSIGN = 284,        /* TOK_MINUS_ASSIGN  */
+    TOK_MUL_ASSIGN = 285,          /* TOK_MUL_ASSIGN  */
+    TOK_DIV_ASSIGN = 286,          /* TOK_DIV_ASSIGN  */
+    UMINUS = 287                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -96,12 +99,13 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 100 "maestro.y"
+#line 207 "maestro.y"
  
     char* stringValue; 
-    std::vector<std::string>* vectorValue; 
+    class ASTNode* astNode;
+    std::vector<ASTNode*>* astList;
 
-#line 105 "maestro.tab.h"
+#line 109 "maestro.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

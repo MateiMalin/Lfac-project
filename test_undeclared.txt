@@ -1,0 +1,15 @@
+/* TEST 4: Variabila Nedeclarata
+   Obiectiv: Trebuie sa CRAPE (variabila 'fantom' nu exista).
+*/
+
+basso x;
+
+finale {
+    x := 100;
+    x := x + 1;
+    
+    canta("Incercam sa afisam o fantoma...");
+    
+    /* Aici trebuie sa dea eroare: Variable not declared */
+    canta(fantom);
+}

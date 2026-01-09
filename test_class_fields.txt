@@ -1,0 +1,21 @@
+/* TEST 7: Acces la Campuri (Fields)
+   Obiectiv: Modificam variabila interna a obiectului.
+*/
+
+opera Contrabass {
+    basso greutate;
+    basso inaltime;
+}
+
+Contrabass instrument;
+
+finale {
+    /* Setam campurile */
+    instrument.greutate := 20;
+    instrument.inaltime := 180;
+
+    canta("Greutate instrument:");
+    /* Aici ar trebui sa afiseze 20 */
+    /* ATENTIE: Asta merge doar daca ai implementat accesul la campuri in evaluate() */
+    // canta(instrument.greutate); 
+}

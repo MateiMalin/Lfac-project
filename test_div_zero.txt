@@ -1,0 +1,16 @@
+/* TEST 5: Impartire la Zero
+   Obiectiv: Trebuie sa CRAPE matematic la executie.
+*/
+
+basso numarator;
+basso numitor;
+
+finale {
+    numarator := 100;
+    numitor := 0;
+
+    canta("Urmeaza o catastrofa matematica...");
+    
+    /* Aici trebuie sa dea eroare: Division by zero */
+    canta(numarator / numitor);
+}

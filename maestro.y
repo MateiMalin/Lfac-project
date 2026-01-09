@@ -12,10 +12,9 @@ extern int yylineno;
 int yylex(void);
 void yyerror(const char *s);
 
-// --- TASK IV: VALUE WRAPPER ---
 class Value {
 public:
-    std::string type; // "basso", "soprano", "libretto", "verita"
+    std::string type;
     int iVal;
     float fVal;
     std::string sVal;
@@ -31,11 +30,11 @@ class Symbol {
         std::string name, type, kind; 
         std::vector <std::string> paramTypes; 
         SymbolTable* nestedScope = nullptr; 
-        Value value; // Stores the evaluated value [cite: 4]
+        
+        Value value; 
 
         Symbol(std::string _name, std::string _type, std::string _kind) { 
             name = _name; type = _type; kind = _kind; 
-            // Initialize default values based on type [cite: 1, 4]
             if (type == "basso") value.type = "basso", value.iVal = 0;
             else if (type == "soprano") value.type = "soprano", value.fVal = 0.0;
             else if (type == "verita") value.type = "verita", value.bVal = false;
@@ -89,44 +88,110 @@ public:
 
     ASTNode(NodeType t) : nodeType(t), left(nullptr), right(nullptr) {}
 
-    Value evaluate() {
+Value evaluate() {
         Value res;
         switch(nodeType) {
-            case NODE_LITERAL: return literalValue; // 
+            case NODE_LITERAL: return literalValue;
+
             case NODE_ID: {
                 Symbol* s = currentScope->findSymbol(idName);
-                return s ? s->value : res; // 
+                if (!s) {
+                    std::cerr << "Error: Variable '" << idName << "' not declared!\n";
+                    exit(1);
+                }
+                return s->value;
             }
+
             case NODE_ASSIGN: {
                 Value val = right->evaluate();
                 Symbol* s = currentScope->findSymbol(idName);
-                if (s) s->value = val; // 
+                
+                if (!s) {
+                    std::cerr << "Error: Cannot assign to undeclared variable '" << idName << "'\n";
+                    exit(1);
+                }
+
+                if (s->type != val.type) {
+                    std::cerr << "Error: Type mismatch. Cannot assign " << val.type << " to " << s->type << "\n";
+                    exit(1);
+                }
+
+                s->value = val; 
                 return val;
             }
+
             case NODE_PRINT: {
                 Value val = left->evaluate();
                 if (val.type == "basso") std::cout << val.iVal << "\n";
                 else if (val.type == "soprano") std::cout << val.fVal << "\n";
+                else if (val.type == "libretto") std::cout << val.sVal << "\n";
                 else if (val.type == "verita") std::cout << (val.bVal ? "vero" : "falso") << "\n";
-                return val; // 
+                return val;
             }
+
             case NODE_OP: {
-                Value l = left->evaluate(); Value r = right->evaluate();
+                Value l = left->evaluate(); 
+                Value r = right->evaluate();
+                
+                if (l.type != r.type) {
+                    std::cerr << "Error: Operation '" << op << "' requires operands of the same type.\n";
+                    exit(1);
+                }
+
                 res.type = l.type;
+
                 if (op == "+") {
                     if (l.type == "basso") res.iVal = l.iVal + r.iVal;
-                    else res.fVal = l.fVal + r.fVal;
-                } else if (op == "==") {
+                    else if (l.type == "soprano") res.fVal = l.fVal + r.fVal;
+                } 
+                else if (op == "-") {
+                    if (l.type == "basso") res.iVal = l.iVal - r.iVal;
+                    else if (l.type == "soprano") res.fVal = l.fVal - r.fVal;
+                }
+                else if (op == "*") {
+                    if (l.type == "basso") res.iVal = l.iVal * r.iVal;
+                    else if (l.type == "soprano") res.fVal = l.fVal * r.fVal;
+                }
+                else if (op == "/") {
+                    if (l.type == "basso") {
+                        if (r.iVal == 0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        res.iVal = l.iVal / r.iVal;
+                    }
+                    else if (l.type == "soprano") {
+                        if (r.fVal == 0.0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        res.fVal = l.fVal / r.fVal;
+                    }
+                }
+                else {
                     res.type = "verita";
-                    if (l.type == "basso") res.bVal = (l.iVal == r.iVal);
-                    else res.bVal = (l.fVal == r.fVal);
+                    if (op == "==") {
+                        if (l.type == "basso") res.bVal = (l.iVal == r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal == r.fVal);
+                    }
+                    else if (op == "!=") {
+                        if (l.type == "basso") res.bVal = (l.iVal != r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal != r.fVal);
+                    }
+                    else if (op == "<") {
+                        if (l.type == "basso") res.bVal = (l.iVal < r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal < r.fVal);
+                    }
+                    else if (op == ">") {
+                        if (l.type == "basso") res.bVal = (l.iVal > r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal > r.fVal);
+                    }
+                    else if (op == "<=") {
+                        if (l.type == "basso") res.bVal = (l.iVal <= r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal <= r.fVal);
+                    }
+                    else if (op == ">=") {
+                        if (l.type == "basso") res.bVal = (l.iVal >= r.iVal);
+                        else if (l.type == "soprano") res.bVal = (l.fVal >= r.fVal);
+                    }
                 }
                 return res;
             }
-            case NODE_OTHER: {
-                res.type = exprType; // Returns default for type 
-                return res;
-            }
+            case NODE_OTHER: return res;
         }
         return res;
     }
@@ -148,10 +213,10 @@ std::string currentType, currentName;
 
 %token <stringValue> TOK_TYPE_INT TOK_TYPE_FLOAT TOK_TYPE_STRING TOK_TYPE_BOOL TOK_TYPE_VOID TOK_ID
 %token <stringValue> LIT_INT LIT_FLOAT LIT_STRING TOK_TRUE TOK_FALSE
-%token TOK_CLASS TOK_MAIN TOK_IF TOK_WHILE TOK_PRINT TOK_ASSIGN TOK_EQ TOK_NEQ TOK_LEQ TOK_GEQ TOK_AND TOK_OR TOK_INC TOK_DEC TOK_PLUS_ASSIGN
+%token TOK_CLASS TOK_MAIN TOK_IF TOK_WHILE TOK_PRINT TOK_ASSIGN TOK_EQ TOK_NEQ TOK_LEQ TOK_GEQ TOK_AND TOK_OR TOK_INC TOK_DEC TOK_PLUS_ASSIGN TOK_MINUS_ASSIGN TOK_MUL_ASSIGN TOK_DIV_ASSIGN
 
-%type <astNode> expression assignment_stmt print_stmt statement
-%type <astList> stmt_list_pure
+%type <astNode> expression assignment_stmt print_stmt statement  func_call control_stmt if_stmt while_stmt
+%type <astList> stmt_list_pure args_list non_empty_args block_pure
 %type <stringValue> data_type return_type
 
 %left TOK_OR
@@ -187,41 +252,166 @@ finale_block: TOK_MAIN { currentScope = new SymbolTable("Main Function", current
 
 stmt_list_pure: stmt_list_pure statement { $1->push_back($2); $$ = $1; } | { $$ = new std::vector<ASTNode*>(); } ;
 
-statement: assignment_stmt { $$ = $1; } | print_stmt { $$ = $1; } | func_call ';' { $$ = nullptr; } | control_stmt { $$ = nullptr; } ;
+statement: 
+      assignment_stmt { $$ = $1; } 
+    | print_stmt { $$ = $1; } 
+    | func_call ';' { $$ = nullptr; } 
+    | control_stmt { $$ = nullptr; }
+    | var_decl { $$ = nullptr; }
+    | TOK_ID TOK_INC ';' { 
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1; 
+        
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "+";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+        ASTNode* litNode = new ASTNode(NODE_LITERAL); litNode->literalValue.type = "basso"; litNode->literalValue.iVal = 1;
 
-assignment_stmt: TOK_ID TOK_ASSIGN expression ';' { 
-        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1; $$->right = $3; // Construction [cite: 1, 52]
-    } ;
+        opNode->left = idNode; opNode->right = litNode;
+        $$->right = opNode;
+    }
+    
+    | TOK_ID TOK_DEC ';' { 
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1; 
+        
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "-";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+        ASTNode* litNode = new ASTNode(NODE_LITERAL); litNode->literalValue.type = "basso"; litNode->literalValue.iVal = 1;
+
+        opNode->left = idNode; opNode->right = litNode;
+        $$->right = opNode;
+    }
+
+    | TOK_ID TOK_PLUS_ASSIGN expression ';' {
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1;
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "+";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+
+        opNode->left = idNode; opNode->right = $3; 
+        $$->right = opNode;
+    }
+
+    | TOK_ID TOK_MINUS_ASSIGN expression ';' {
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1;
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "-";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+
+        opNode->left = idNode; opNode->right = $3; 
+        $$->right = opNode;
+    }
+
+    | TOK_ID TOK_MUL_ASSIGN expression ';' {
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1;
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "*";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+
+        opNode->left = idNode; opNode->right = $3; 
+        $$->right = opNode;
+    }
+
+    | TOK_ID TOK_DIV_ASSIGN expression ';' {
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1;
+
+        ASTNode* opNode = new ASTNode(NODE_OP); opNode->op = "/";
+        ASTNode* idNode = new ASTNode(NODE_ID); idNode->idName = $1;
+
+        opNode->left = idNode; opNode->right = $3; 
+        $$->right = opNode;
+    }
+    ;
+
+assignment_stmt: 
+    TOK_ID TOK_ASSIGN expression ';' { 
+        $$ = new ASTNode(NODE_ASSIGN); $$->idName = $1; $$->right = $3; 
+    } 
+    | TOK_ID '.' TOK_ID TOK_ASSIGN expression ';' {
+        $$ = new ASTNode(NODE_ASSIGN);
+        $$->idName = std::string($1) + "." + std::string($3);
+        $$->right = $5;
+    }
+    ;
 
 print_stmt: TOK_PRINT '(' expression ')' ';' { 
-        $$ = new ASTNode(NODE_PRINT); $$->left = $3; // Construction [cite: 1, 61]
+        $$ = new ASTNode(NODE_PRINT); $$->left = $3;
     } ;
 
-expression: expression '+' expression { $$ = new ASTNode(NODE_OP); $$->op = "+"; $$->left = $1; $$->right = $3; }
+expression: 
+    expression '+' expression { $$ = new ASTNode(NODE_OP); $$->op = "+"; $$->left = $1; $$->right = $3; }
+    | expression '-' expression { $$ = new ASTNode(NODE_OP); $$->op = "-"; $$->left = $1; $$->right = $3; }
+    | expression '*' expression { $$ = new ASTNode(NODE_OP); $$->op = "*"; $$->left = $1; $$->right = $3; }
+    | expression '/' expression { $$ = new ASTNode(NODE_OP); $$->op = "/"; $$->left = $1; $$->right = $3; }
+
+    | TOK_ID '.' TOK_ID { 
+        $$ = new ASTNode(NODE_ID);
+        $$->idName = std::string($1) + "." + std::string($3);
+    }
+    
+    | expression TOK_EQ expression { $$ = new ASTNode(NODE_OP); $$->op = "=="; $$->left = $1; $$->right = $3; }
+    | expression TOK_NEQ expression { $$ = new ASTNode(NODE_OP); $$->op = "!="; $$->left = $1; $$->right = $3; }
+    | expression '<' expression { $$ = new ASTNode(NODE_OP); $$->op = "<"; $$->left = $1; $$->right = $3; }
+    | expression '>' expression { $$ = new ASTNode(NODE_OP); $$->op = ">"; $$->left = $1; $$->right = $3; }
+    | expression TOK_LEQ expression { $$ = new ASTNode(NODE_OP); $$->op = "<="; $$->left = $1; $$->right = $3; }
+    | expression TOK_GEQ expression { $$ = new ASTNode(NODE_OP); $$->op = ">="; $$->left = $1; $$->right = $3; }
+    
+    | expression TOK_AND expression { $$ = new ASTNode(NODE_OP); $$->op = "&&"; $$->left = $1; $$->right = $3; }
+    | expression TOK_OR expression { $$ = new ASTNode(NODE_OP); $$->op = "||"; $$->left = $1; $$->right = $3; }
+
     | LIT_INT { $$ = new ASTNode(NODE_LITERAL); $$->literalValue.type = "basso"; $$->literalValue.iVal = atoi($1); }
+    | LIT_FLOAT { $$ = new ASTNode(NODE_LITERAL); $$->literalValue.type = "soprano"; $$->literalValue.fVal = atof($1); }
+    | LIT_STRING { $$ = new ASTNode(NODE_LITERAL); $$->literalValue.type = "libretto"; $$->literalValue.sVal = $1; }
     | TOK_TRUE { $$ = new ASTNode(NODE_LITERAL); $$->literalValue.type = "verita"; $$->literalValue.bVal = true; }
+    | TOK_FALSE { $$ = new ASTNode(NODE_LITERAL); $$->literalValue.type = "verita"; $$->literalValue.bVal = false; }
     | TOK_ID { $$ = new ASTNode(NODE_ID); $$->idName = $1; }
     | func_call { $$ = new ASTNode(NODE_OTHER); $$->exprType = "unknown"; }
-    | '(' expression ')' { $$ = $2; } ;
+    | '(' expression ')' { $$ = $2; } 
+    ;
 
-func_call: TOK_ID '(' args_list ')' { $$ = nullptr; } ;
-args_list: non_empty_args | ;
-non_empty_args: non_empty_args ',' expression | expression ;
+func_call: 
+    TOK_ID '(' args_list ')' { 
+        $$ = new ASTNode(NODE_OTHER); 
+        $$->idName = $1; 
+    }
+    | TOK_ID '.' TOK_ID '(' args_list ')' { 
+        $$ = new ASTNode(NODE_OTHER); 
+        $$->idName = std::string($1) + "." + std::string($3); 
+    }
+    ;
+
+args_list: non_empty_args { $$ = $1; } 
+    | { $$ = new std::vector<ASTNode*>(); } ; // Lista goală
+
+non_empty_args: non_empty_args ',' expression { $1->push_back($3); $$ = $1; }
+    | expression { $$ = new std::vector<ASTNode*>(); $$->push_back($1); } ;
+
 control_stmt: if_stmt | while_stmt ;
-if_stmt: TOK_IF '(' expression ')' block_pure ;
-while_stmt: TOK_WHILE '(' expression ')' block_pure ;
-block_pure: '{' stmt_list_pure '}' ;
+
+if_stmt: TOK_IF '(' expression ')' block_pure { $$ = nullptr; } ;
+
+while_stmt: TOK_WHILE '(' expression ')' block_pure { $$ = nullptr; } ;
+
+block_pure: '{' stmt_list_pure '}' { $$ = $2; } ;
+
 class_decl: TOK_CLASS TOK_ID '{' class_body '}' ;
+
 class_body: class_body class_member | ;
+
 class_member: return_type TOK_ID class_member_suffix ;
+
 class_member_suffix: ';' | '(' param_list ')' '{' func_body '}' ;
+
 param_list: non_empty_params | ;
+
 non_empty_params: non_empty_params ',' data_type TOK_ID | data_type TOK_ID ;
-func_body: var_decl_list stmt_list_pure ;
-var_decl_list: var_decl_list var_decl | ;
+
+func_body: stmt_list_pure ;
+
 var_decl: data_type TOK_ID var_decl_suffix ;
+
 var_decl_suffix: ';' | TOK_ASSIGN expression ';' ;
+
 return_type: data_type | TOK_TYPE_VOID ;
+
 data_type: TOK_TYPE_INT | TOK_TYPE_FLOAT | TOK_TYPE_STRING | TOK_TYPE_BOOL | TOK_ID ;
 %%
 

@@ -1,0 +1,32 @@
+/* TEST 2: Comparatii si Boolean
+   REGULA: Variabile globale.
+*/
+
+basso a;
+basso b;
+verita rez;
+soprano pi;
+soprano e;
+
+finale {
+    a := 10;
+    b := 20;
+
+    canta("Este 10 < 20? (Asteptat: vero)");
+    rez := a < b;
+    canta(rez);
+
+    canta("Este 10 == 20? (Asteptat: falso)");
+    rez := a == b;
+    canta(rez);
+
+    canta("Este 10 != 20? (Asteptat: vero)");
+    canta(a != b);
+
+    /* Testam si cu float (soprano) */
+    pi := 3.14;
+    e := 2.71;
+    
+    canta("Este 3.14 > 2.71? (Asteptat: vero)");
+    canta(pi > e);
+}
