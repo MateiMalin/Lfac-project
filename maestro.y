@@ -315,7 +315,7 @@ global_decl_suffix: '(' {
 
 finale_block: TOK_MAIN { currentScope = new SymbolTable("Main Function", currentScope); }
     '{' stmt_list_pure '}' { 
-        for (ASTNode* node : *$4) if (node) node->evaluate(); // Evaluate Main Block [cite: 1, 48]
+        for (ASTNode* node : *$4) if (node) node->evaluate(); 
         currentScope->printTable(tableFile); currentScope = currentScope->parent; 
     }
     ;
@@ -414,7 +414,7 @@ expression:
 
     | '-' expression %prec UMINUS { 
             $$ = new ASTNode(NODE_OP); 
-            $$->op = "UMINUS";  /* Nume special ca sa stim la evaluare */
+            $$->op = "UMINUS"; 
             $$->left = $2; 
             $$->right = nullptr; 
         }
@@ -466,7 +466,7 @@ func_call:
     ;
 
 args_list: non_empty_args { $$ = $1; } 
-    | { $$ = new std::vector<ASTNode*>(); } ; // Lista goală
+    | { $$ = new std::vector<ASTNode*>(); } ; 
 
 non_empty_args: non_empty_args ',' expression { $1->push_back($3); $$ = $1; }
     | expression { $$ = new std::vector<ASTNode*>(); $$->push_back($1); } ;
