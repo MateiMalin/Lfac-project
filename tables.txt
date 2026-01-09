@@ -1,0 +1,8 @@
+Symbol Table: Main Function
+____________________________________________
+
+Symbol Table: Global Scope
+____________________________________________
+x	basso	global_var
+y	basso	global_var
+

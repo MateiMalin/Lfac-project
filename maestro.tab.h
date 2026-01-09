@@ -45,7 +45,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 202 "maestro.y"
+#line 273 "maestro.y"
  
     #include <vector> 
     #include <string> 
@@ -99,7 +99,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 207 "maestro.y"
+#line 278 "maestro.y"
  
     char* stringValue; 
     class ASTNode* astNode;
