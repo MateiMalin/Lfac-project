@@ -221,6 +221,13 @@ public:
             }
 
             case NODE_OP: {
+                if (op == "UMINUS") {
+                    Value val = left->evaluate();
+                    if (val.type == "basso") val.iVal = -val.iVal;
+                    else if (val.type == "soprano") val.fVal = -val.fVal;
+                    return val;
+                }
+                
                 Value l = left->evaluate(); 
                 Value r = right->evaluate();
                 
@@ -332,7 +339,7 @@ public:
 
 std::string currentType, currentName; 
 
-#line 336 "maestro.tab.c"
+#line 343 "maestro.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -766,16 +773,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  3
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   413
+#define YYLAST   424
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  46
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  33
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  82
+#define YYNRULES  83
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  160
+#define YYNSTATES  162
 
 /* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   287
@@ -827,15 +834,15 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   294,   294,   294,   298,   298,   300,   300,   300,   302,
-     302,   306,   309,   309,   316,   316,   319,   320,   321,   322,
-     323,   324,   335,   346,   356,   366,   376,   388,   391,   398,
-     403,   404,   405,   406,   408,   413,   414,   415,   416,   417,
-     418,   420,   421,   423,   424,   425,   426,   427,   428,   429,
-     430,   434,   444,   455,   456,   458,   459,   461,   461,   463,
-     465,   467,   469,   471,   471,   473,   475,   475,   477,   477,
-     480,   484,   490,   492,   494,   494,   496,   496,   498,   498,
-     498,   498,   498
+       0,   301,   301,   301,   305,   305,   307,   307,   307,   309,
+     309,   313,   316,   316,   323,   323,   326,   327,   328,   329,
+     330,   331,   342,   353,   363,   373,   383,   395,   398,   405,
+     410,   411,   412,   413,   415,   421,   426,   427,   428,   429,
+     430,   431,   433,   434,   436,   437,   438,   439,   440,   441,
+     442,   443,   447,   457,   468,   469,   471,   472,   474,   474,
+     476,   478,   480,   482,   484,   484,   486,   488,   488,   490,
+     490,   493,   497,   503,   505,   507,   507,   509,   509,   511,
+     511,   511,   511,   511
 };
 #endif
 
@@ -875,7 +882,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-26)
+#define YYPACT_NINF (-29)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -889,22 +896,23 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int16 yypact[] =
 {
-     -26,    19,   -26,   -26,   398,   -26,   -26,   -26,   -26,   -26,
-     -26,    20,   -26,   -26,   -26,   -26,    28,   -26,    -2,    11,
-     -26,   -26,   -26,    36,    26,     0,    61,   -26,   -26,   -26,
-     -26,   -26,   -26,    30,    63,     2,    14,    38,   -26,   -26,
-     -26,   -26,    35,   -26,   -26,   -26,   -26,    73,   -24,   -26,
-     -26,   -26,   -26,   -26,    61,   111,   -26,   114,    37,    61,
-      44,    52,    61,    61,    61,    61,    61,    93,    61,    61,
-      61,   -26,    -6,    95,   279,    61,    61,    61,    61,    61,
-      61,    61,    61,    61,    61,    61,    61,   -26,    64,    60,
-      98,   114,   -26,   -26,   135,   -26,   -26,   159,   183,   207,
-     231,   363,    83,    71,     8,   300,   321,   342,   -26,    87,
-     -26,   105,   105,    49,    49,    76,   129,    49,    49,   -11,
-     -11,   -26,   -26,    88,   114,   -26,   133,   -26,   -26,   -26,
-     -26,   -26,   -26,    61,    61,    61,   134,   134,   131,   -26,
-     168,   136,   363,   255,   149,   -26,   -26,   -26,   -26,   182,
-     155,   -26,   -26,   -26,   -26,     6,   -26,   167,   -26,   -26
+     -29,    20,   -29,   -29,   409,   -29,   -29,   -29,   -29,   -29,
+     -29,    14,   -29,   -29,   -29,   -29,    21,   -29,   -10,    -9,
+     -29,   -29,   -29,   -15,    71,     9,    83,   -29,   -29,   -29,
+     -29,   -29,   -29,    33,   109,     7,     8,    13,   -29,   -29,
+     -29,   -29,    10,   -29,   -29,   -29,   -29,    46,   -28,   -29,
+     -29,   -29,   -29,   -29,    83,    83,   122,   -29,    32,    41,
+      83,    29,    42,    83,    83,    83,    83,    83,    89,    83,
+      83,    83,   -29,   -13,    96,   -29,   290,    83,    83,    83,
+      83,    83,    83,    83,    83,    83,    83,    83,    83,   -29,
+      68,    60,    98,    32,   -29,   -29,   146,   -29,   -29,   170,
+     194,   218,   242,   374,    69,    67,   -16,   311,   332,   353,
+     -29,    72,   -29,   164,   164,   -27,   -27,    66,   140,   -27,
+     -27,   -18,   -18,   -29,   -29,    75,    32,   -29,    70,   -29,
+     -29,   -29,   -29,   -29,   -29,    83,    83,    83,    76,    76,
+      77,   -29,   111,    80,   374,   266,    84,   -29,   -29,   -29,
+     -29,   217,    87,   -29,   -29,   -29,   -29,    65,   -29,    88,
+     -29,   -29
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -912,39 +920,40 @@ static const yytype_int16 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       2,     0,     5,     1,     0,    78,    79,    80,    81,    77,
-      82,     0,    12,     4,     3,     6,     0,    76,     0,     0,
-       7,    64,    15,     0,     0,     0,     0,     9,    74,     8,
-      11,    62,    63,     0,    82,     0,     0,     0,    13,    14,
-      16,    17,     0,    19,    57,    58,    20,     0,    48,    43,
-      44,    45,    46,    47,     0,     0,    49,    69,     0,     0,
-       0,     0,     0,     0,     0,     0,    54,     0,     0,     0,
-       0,    18,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,    75,     0,    68,
-       0,    69,    66,    65,     0,    21,    22,     0,     0,     0,
-       0,    56,     0,    53,     0,     0,     0,     0,    73,    34,
-      50,    35,    36,    39,    40,    41,    42,    37,    38,    30,
-      31,    32,    33,     0,     0,    71,     0,    27,    23,    24,
-      25,    26,    51,     0,     0,    54,     0,     0,     0,    15,
-       0,     0,    55,     0,     0,    15,    59,    60,    29,    72,
-       0,    70,    15,    28,    52,     0,    10,     0,    61,    67
+       2,     0,     5,     1,     0,    79,    80,    81,    82,    78,
+      83,     0,    12,     4,     3,     6,     0,    77,     0,     0,
+       7,    65,    15,     0,     0,     0,     0,     9,    75,     8,
+      11,    63,    64,     0,    83,     0,     0,     0,    13,    14,
+      16,    17,     0,    19,    58,    59,    20,     0,    49,    44,
+      45,    46,    47,    48,     0,     0,     0,    50,    70,     0,
+       0,     0,     0,     0,     0,     0,     0,    55,     0,     0,
+       0,     0,    18,     0,     0,    34,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,     0,     0,     0,    76,
+       0,    69,     0,    70,    67,    66,     0,    21,    22,     0,
+       0,     0,     0,    57,     0,    54,     0,     0,     0,     0,
+      74,    35,    51,    36,    37,    40,    41,    42,    43,    38,
+      39,    30,    31,    32,    33,     0,     0,    72,     0,    27,
+      23,    24,    25,    26,    52,     0,     0,    55,     0,     0,
+       0,    15,     0,     0,    56,     0,     0,    15,    60,    61,
+      29,    73,     0,    71,    15,    28,    53,     0,    10,     0,
+      62,    68
 };
 
 /* YYPGOTO[NTERM-NUM].  */
-static const yytype_int16 yypgoto[] =
+static const yytype_int8 yypgoto[] =
 {
-     -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,   -26,
-     -20,   -26,   -26,   -26,   -19,   -25,    66,   -26,   -26,   -26,
-     -26,    74,   -26,   -26,   -26,   -26,   119,   -26,    62,   -26,
-     140,   189,    -3
+     -29,   -29,   -29,   -29,   -29,   -29,   -29,   -29,   -29,   -29,
+     -20,   -29,   -29,   -29,   -21,   -25,   -12,   -29,   -29,   -29,
+     -29,    -8,   -29,   -29,   -29,   -29,    40,   -29,    -5,   -29,
+      61,   117,    -3
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_uint8 yydefgoto[] =
 {
-       0,     1,     2,     4,    13,    23,    29,    57,    14,    19,
-     149,    39,    40,    41,   101,    56,   102,   103,    43,    44,
-      45,   146,    15,    24,    32,    93,    88,    89,   150,    46,
+       0,     1,     2,     4,    13,    23,    29,    58,    14,    19,
+     151,    39,    40,    41,   103,    57,   104,   105,    43,    44,
+      45,   148,    15,    24,    32,    95,    90,    91,   152,    46,
       30,    16,    47
 };
 
@@ -953,84 +962,84 @@ static const yytype_uint8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      42,    17,    25,     5,     6,     7,     8,    55,    34,     5,
-       6,     7,     8,    26,    34,    66,    35,    36,    37,     3,
-      73,    17,    35,    36,    37,    85,    86,   134,    18,     5,
-       6,     7,     8,     9,    10,    74,    20,    28,    58,    21,
-      94,    68,    38,    97,    98,    99,   100,   135,   158,   105,
-     106,   107,    22,    69,    90,    26,   111,   112,   113,   114,
-     115,   116,   117,   118,   119,   120,   121,   122,    31,    48,
-      49,    50,    51,    52,    53,    27,    91,    70,    71,    28,
-      92,    72,    59,    83,    84,    85,    86,    95,    90,    60,
-      61,    62,    63,    64,    65,    96,    75,    76,    77,    78,
-      54,   104,    66,   109,   123,   124,   125,    67,    81,    82,
-      83,    84,    85,    86,   142,   143,   133,     5,     6,     7,
-       8,   140,    10,   132,    42,   155,   135,    77,    78,   139,
-      42,    75,    76,    77,    78,    79,    80,    81,    82,    83,
-      84,    85,    86,    81,    82,    83,    84,    85,    86,    75,
-      76,    77,    78,    79,    87,    75,    76,    77,    78,    79,
-      80,    81,    82,    83,    84,    85,    86,    81,    82,    83,
-      84,    85,    86,   141,   148,   145,   151,   152,   127,    75,
-      76,    77,    78,    79,    80,     5,     6,     7,     8,   154,
-      34,    81,    82,    83,    84,    85,    86,   156,    35,    36,
-      37,   144,   128,    75,    76,    77,    78,    79,    80,   159,
-     126,   147,   108,    33,   157,    81,    82,    83,    84,    85,
-      86,     0,     0,     0,     0,     0,   129,    75,    76,    77,
-      78,    79,    80,     0,     0,     0,     0,     0,     0,    81,
-      82,    83,    84,    85,    86,     0,     0,     0,     0,     0,
-     130,    75,    76,    77,    78,    79,    80,     0,     0,     0,
-       0,     0,     0,    81,    82,    83,    84,    85,    86,     0,
-       0,     0,     0,     0,   131,    75,    76,    77,    78,    79,
-      80,     0,     0,     0,     0,     0,     0,    81,    82,    83,
-      84,    85,    86,     0,     0,     0,     0,     0,   153,    75,
-      76,    77,    78,    79,    80,     0,     0,     0,     0,     0,
-       0,    81,    82,    83,    84,    85,    86,     0,     0,   110,
-      75,    76,    77,    78,    79,    80,     0,     0,     0,     0,
-       0,     0,    81,    82,    83,    84,    85,    86,     0,     0,
-     136,    75,    76,    77,    78,    79,    80,     0,     0,     0,
-       0,     0,     0,    81,    82,    83,    84,    85,    86,     0,
-       0,   137,    75,    76,    77,    78,    79,    80,     0,     0,
-       0,     0,     0,     0,    81,    82,    83,    84,    85,    86,
-       0,     0,   138,    75,    76,    77,    78,    79,    80,     0,
-       0,     0,     0,     0,     0,    81,    82,    83,    84,    85,
-      86,     5,     6,     7,     8,     9,    10,     0,     0,     0,
-       0,     0,    11,    12
+      42,    17,    25,   136,    26,    56,    26,    85,    86,    87,
+      88,    67,     5,     6,     7,     8,    74,    34,    87,    88,
+       3,    17,    18,   137,    27,    35,    36,    37,    28,    20,
+      28,    21,    22,    75,    76,     5,     6,     7,     8,    96,
+      10,    59,    99,   100,   101,   102,    69,    70,   107,   108,
+     109,    38,    71,    72,    73,    92,   113,   114,   115,   116,
+     117,   118,   119,   120,   121,   122,   123,   124,     5,     6,
+       7,     8,    97,    34,     5,     6,     7,     8,     9,    10,
+      93,    35,    36,    37,    94,    98,    77,    78,    79,    80,
+      92,    48,    49,    50,    51,    52,    53,   106,    83,    84,
+      85,    86,    87,    88,   111,   126,   127,   160,   125,   134,
+     143,   137,   135,    31,   144,   145,   141,   147,    54,   153,
+     150,   154,    55,   142,   156,   146,    42,   157,    60,   158,
+     161,   149,    42,   128,   110,    61,    62,    63,    64,    65,
+      66,    33,    77,    78,    79,    80,    81,    82,    67,   159,
+       0,     0,     0,    68,    83,    84,    85,    86,    87,    88,
+      77,    78,    79,    80,    81,    89,    77,    78,    79,    80,
+      81,    82,    83,    84,    85,    86,    87,    88,    83,    84,
+      85,    86,    87,    88,     0,     0,    79,    80,     0,   129,
+      77,    78,    79,    80,    81,    82,    83,    84,    85,    86,
+      87,    88,    83,    84,    85,    86,    87,    88,     0,     0,
+       0,     0,     0,   130,    77,    78,    79,    80,    81,    82,
+       5,     6,     7,     8,     0,    34,    83,    84,    85,    86,
+      87,    88,     0,    35,    36,    37,     0,   131,    77,    78,
+      79,    80,    81,    82,     0,     0,     0,     0,     0,     0,
+      83,    84,    85,    86,    87,    88,     0,     0,     0,     0,
+       0,   132,    77,    78,    79,    80,    81,    82,     0,     0,
+       0,     0,     0,     0,    83,    84,    85,    86,    87,    88,
+       0,     0,     0,     0,     0,   133,    77,    78,    79,    80,
+      81,    82,     0,     0,     0,     0,     0,     0,    83,    84,
+      85,    86,    87,    88,     0,     0,     0,     0,     0,   155,
+      77,    78,    79,    80,    81,    82,     0,     0,     0,     0,
+       0,     0,    83,    84,    85,    86,    87,    88,     0,     0,
+     112,    77,    78,    79,    80,    81,    82,     0,     0,     0,
+       0,     0,     0,    83,    84,    85,    86,    87,    88,     0,
+       0,   138,    77,    78,    79,    80,    81,    82,     0,     0,
+       0,     0,     0,     0,    83,    84,    85,    86,    87,    88,
+       0,     0,   139,    77,    78,    79,    80,    81,    82,     0,
+       0,     0,     0,     0,     0,    83,    84,    85,    86,    87,
+      88,     0,     0,   140,    77,    78,    79,    80,    81,    82,
+       0,     0,     0,     0,     0,     0,    83,    84,    85,    86,
+      87,    88,     5,     6,     7,     8,     9,    10,     0,     0,
+       0,     0,     0,    11,    12
 };
 
 static const yytype_int16 yycheck[] =
 {
-      25,     4,    22,     3,     4,     5,     6,    26,     8,     3,
-       4,     5,     6,    19,     8,    39,    16,    17,    18,     0,
-      44,    24,    16,    17,    18,    36,    37,    19,     8,     3,
-       4,     5,     6,     7,     8,    54,     8,    43,     8,    41,
-      59,    39,    42,    62,    63,    64,    65,    39,    42,    68,
-      69,    70,    41,    39,    57,    19,    75,    76,    77,    78,
-      79,    80,    81,    82,    83,    84,    85,    86,    42,     8,
-       9,    10,    11,    12,    13,    39,    39,    39,    43,    43,
-      43,     8,    19,    34,    35,    36,    37,    43,    91,    26,
-      27,    28,    29,    30,    31,    43,    20,    21,    22,    23,
-      39,     8,    39,     8,    40,    45,     8,    44,    32,    33,
-      34,    35,    36,    37,   133,   134,    45,     3,     4,     5,
-       6,   124,     8,    40,   149,   145,    39,    22,    23,    41,
-     155,    20,    21,    22,    23,    24,    25,    32,    33,    34,
-      35,    36,    37,    32,    33,    34,    35,    36,    37,    20,
-      21,    22,    23,    24,    43,    20,    21,    22,    23,    24,
-      25,    32,    33,    34,    35,    36,    37,    32,    33,    34,
-      35,    36,    37,    40,    43,    41,     8,    41,    43,    20,
-      21,    22,    23,    24,    25,     3,     4,     5,     6,    40,
-       8,    32,    33,    34,    35,    36,    37,    42,    16,    17,
-      18,   135,    43,    20,    21,    22,    23,    24,    25,    42,
-      91,   137,    72,    24,   152,    32,    33,    34,    35,    36,
-      37,    -1,    -1,    -1,    -1,    -1,    43,    20,    21,    22,
-      23,    24,    25,    -1,    -1,    -1,    -1,    -1,    -1,    32,
-      33,    34,    35,    36,    37,    -1,    -1,    -1,    -1,    -1,
-      43,    20,    21,    22,    23,    24,    25,    -1,    -1,    -1,
-      -1,    -1,    -1,    32,    33,    34,    35,    36,    37,    -1,
-      -1,    -1,    -1,    -1,    43,    20,    21,    22,    23,    24,
-      25,    -1,    -1,    -1,    -1,    -1,    -1,    32,    33,    34,
-      35,    36,    37,    -1,    -1,    -1,    -1,    -1,    43,    20,
-      21,    22,    23,    24,    25,    -1,    -1,    -1,    -1,    -1,
-      -1,    32,    33,    34,    35,    36,    37,    -1,    -1,    40,
+      25,     4,    22,    19,    19,    26,    19,    34,    35,    36,
+      37,    39,     3,     4,     5,     6,    44,     8,    36,    37,
+       0,    24,     8,    39,    39,    16,    17,    18,    43,     8,
+      43,    41,    41,    54,    55,     3,     4,     5,     6,    60,
+       8,     8,    63,    64,    65,    66,    39,    39,    69,    70,
+      71,    42,    39,    43,     8,    58,    77,    78,    79,    80,
+      81,    82,    83,    84,    85,    86,    87,    88,     3,     4,
+       5,     6,    43,     8,     3,     4,     5,     6,     7,     8,
+      39,    16,    17,    18,    43,    43,    20,    21,    22,    23,
+      93,     8,     9,    10,    11,    12,    13,     8,    32,    33,
+      34,    35,    36,    37,     8,    45,     8,    42,    40,    40,
+      40,    39,    45,    42,   135,   136,    41,    41,    35,     8,
+      43,    41,    39,   126,    40,   137,   151,   147,    19,    42,
+      42,   139,   157,    93,    73,    26,    27,    28,    29,    30,
+      31,    24,    20,    21,    22,    23,    24,    25,    39,   154,
+      -1,    -1,    -1,    44,    32,    33,    34,    35,    36,    37,
+      20,    21,    22,    23,    24,    43,    20,    21,    22,    23,
+      24,    25,    32,    33,    34,    35,    36,    37,    32,    33,
+      34,    35,    36,    37,    -1,    -1,    22,    23,    -1,    43,
+      20,    21,    22,    23,    24,    25,    32,    33,    34,    35,
+      36,    37,    32,    33,    34,    35,    36,    37,    -1,    -1,
+      -1,    -1,    -1,    43,    20,    21,    22,    23,    24,    25,
+       3,     4,     5,     6,    -1,     8,    32,    33,    34,    35,
+      36,    37,    -1,    16,    17,    18,    -1,    43,    20,    21,
+      22,    23,    24,    25,    -1,    -1,    -1,    -1,    -1,    -1,
+      32,    33,    34,    35,    36,    37,    -1,    -1,    -1,    -1,
+      -1,    43,    20,    21,    22,    23,    24,    25,    -1,    -1,
+      -1,    -1,    -1,    -1,    32,    33,    34,    35,    36,    37,
+      -1,    -1,    -1,    -1,    -1,    43,    20,    21,    22,    23,
+      24,    25,    -1,    -1,    -1,    -1,    -1,    -1,    32,    33,
+      34,    35,    36,    37,    -1,    -1,    -1,    -1,    -1,    43,
       20,    21,    22,    23,    24,    25,    -1,    -1,    -1,    -1,
       -1,    -1,    32,    33,    34,    35,    36,    37,    -1,    -1,
       40,    20,    21,    22,    23,    24,    25,    -1,    -1,    -1,
@@ -1039,8 +1048,10 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    -1,    32,    33,    34,    35,    36,    37,
       -1,    -1,    40,    20,    21,    22,    23,    24,    25,    -1,
       -1,    -1,    -1,    -1,    -1,    32,    33,    34,    35,    36,
-      37,     3,     4,     5,     6,     7,     8,    -1,    -1,    -1,
-      -1,    -1,    14,    15
+      37,    -1,    -1,    40,    20,    21,    22,    23,    24,    25,
+      -1,    -1,    -1,    -1,    -1,    -1,    32,    33,    34,    35,
+      36,    37,     3,     4,     5,     6,     7,     8,    -1,    -1,
+      -1,    -1,    -1,    14,    15
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
@@ -1052,17 +1063,18 @@ static const yytype_int8 yystos[] =
        8,    41,    41,    51,    69,    56,    19,    39,    43,    52,
       76,    42,    70,    77,     8,    16,    17,    18,    42,    57,
       58,    59,    61,    64,    65,    66,    75,    78,     8,     9,
-      10,    11,    12,    13,    39,    60,    61,    53,     8,    19,
-      26,    27,    28,    29,    30,    31,    39,    44,    39,    39,
-      39,    43,     8,    44,    60,    20,    21,    22,    23,    24,
-      25,    32,    33,    34,    35,    36,    37,    43,    72,    73,
-      78,    39,    43,    71,    60,    43,    43,    60,    60,    60,
-      60,    60,    62,    63,     8,    60,    60,    60,    76,     8,
-      40,    60,    60,    60,    60,    60,    60,    60,    60,    60,
-      60,    60,    60,    40,    45,     8,    72,    43,    43,    43,
-      43,    43,    40,    45,    19,    39,    40,    40,    40,    41,
-      78,    40,    60,    60,    62,    41,    67,    67,    43,    56,
-      74,     8,    41,    43,    40,    56,    42,    74,    42,    42
+      10,    11,    12,    13,    35,    39,    60,    61,    53,     8,
+      19,    26,    27,    28,    29,    30,    31,    39,    44,    39,
+      39,    39,    43,     8,    44,    60,    60,    20,    21,    22,
+      23,    24,    25,    32,    33,    34,    35,    36,    37,    43,
+      72,    73,    78,    39,    43,    71,    60,    43,    43,    60,
+      60,    60,    60,    60,    62,    63,     8,    60,    60,    60,
+      76,     8,    40,    60,    60,    60,    60,    60,    60,    60,
+      60,    60,    60,    60,    60,    40,    45,     8,    72,    43,
+      43,    43,    43,    43,    40,    45,    19,    39,    40,    40,
+      40,    41,    78,    40,    60,    60,    62,    41,    67,    67,
+      43,    56,    74,     8,    41,    43,    40,    56,    42,    74,
+      42,    42
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
@@ -1073,10 +1085,10 @@ static const yytype_int8 yyr1[] =
       57,    57,    57,    57,    57,    57,    57,    58,    58,    59,
       60,    60,    60,    60,    60,    60,    60,    60,    60,    60,
       60,    60,    60,    60,    60,    60,    60,    60,    60,    60,
-      60,    61,    61,    62,    62,    63,    63,    64,    64,    65,
-      66,    67,    68,    69,    69,    70,    71,    71,    72,    72,
-      73,    73,    74,    75,    76,    76,    77,    77,    78,    78,
-      78,    78,    78
+      60,    60,    61,    61,    62,    62,    63,    63,    64,    64,
+      65,    66,    67,    68,    69,    69,    70,    71,    71,    72,
+      72,    73,    73,    74,    75,    76,    76,    77,    77,    78,
+      78,    78,    78,    78
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -1085,12 +1097,12 @@ static const yytype_int8 yyr2[] =
        0,     2,     0,     3,     2,     0,     1,     0,     4,     0,
        7,     1,     0,     5,     2,     0,     1,     1,     2,     1,
        1,     3,     3,     4,     4,     4,     4,     4,     6,     5,
-       3,     3,     3,     3,     3,     3,     3,     3,     3,     3,
-       3,     3,     3,     1,     1,     1,     1,     1,     1,     1,
-       3,     4,     6,     1,     0,     3,     1,     1,     1,     5,
-       5,     3,     5,     2,     0,     3,     1,     6,     1,     0,
-       4,     2,     1,     3,     1,     3,     1,     1,     1,     1,
-       1,     1,     1
+       3,     3,     3,     3,     2,     3,     3,     3,     3,     3,
+       3,     3,     3,     3,     1,     1,     1,     1,     1,     1,
+       1,     3,     4,     6,     1,     0,     3,     1,     1,     1,
+       5,     5,     3,     5,     2,     0,     3,     1,     6,     1,
+       0,     4,     2,     1,     3,     1,     3,     1,     1,     1,
+       1,     1,     1,     1
 };
 
 
@@ -1554,103 +1566,103 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* $@1: %empty  */
-#line 294 "maestro.y"
+#line 301 "maestro.y"
          { globalScope = new SymbolTable("Global Scope"); currentScope = globalScope; }
-#line 1560 "maestro.tab.c"
-    break;
-
-  case 3: /* program: $@1 global_elements finale_block  */
-#line 295 "maestro.y"
-                                 { currentScope->printTable(tableFile); std::cout << "Sintassi Corretta!\n"; }
-#line 1566 "maestro.tab.c"
-    break;
-
-  case 7: /* $@2: %empty  */
-#line 300 "maestro.y"
-                                             { currentType = (yyvsp[-1].stringValue); currentName = (yyvsp[0].stringValue); }
 #line 1572 "maestro.tab.c"
     break;
 
-  case 9: /* $@3: %empty  */
+  case 3: /* program: $@1 global_elements finale_block  */
 #line 302 "maestro.y"
+                                 { currentScope->printTable(tableFile); std::cout << "Sintassi Corretta!\n"; }
+#line 1578 "maestro.tab.c"
+    break;
+
+  case 7: /* $@2: %empty  */
+#line 307 "maestro.y"
+                                             { currentType = (yyvsp[-1].stringValue); currentName = (yyvsp[0].stringValue); }
+#line 1584 "maestro.tab.c"
+    break;
+
+  case 9: /* $@3: %empty  */
+#line 309 "maestro.y"
                         { 
         currentScope->addSymbol(currentName, currentType, "function");
         currentScope = new SymbolTable("Function: " + currentName, currentScope); 
     }
-#line 1581 "maestro.tab.c"
-    break;
-
-  case 10: /* global_decl_suffix: '(' $@3 param_list ')' '{' func_body '}'  */
-#line 305 "maestro.y"
-                                       { currentScope->printTable(tableFile); currentScope = currentScope->parent; }
-#line 1587 "maestro.tab.c"
-    break;
-
-  case 11: /* global_decl_suffix: var_decl_suffix  */
-#line 306 "maestro.y"
-                      { currentScope->addSymbol(currentName, currentType, "global_var"); }
 #line 1593 "maestro.tab.c"
     break;
 
-  case 12: /* $@4: %empty  */
-#line 309 "maestro.y"
-                       { currentScope = new SymbolTable("Main Function", currentScope); }
+  case 10: /* global_decl_suffix: '(' $@3 param_list ')' '{' func_body '}'  */
+#line 312 "maestro.y"
+                                       { currentScope->printTable(tableFile); currentScope = currentScope->parent; }
 #line 1599 "maestro.tab.c"
     break;
 
+  case 11: /* global_decl_suffix: var_decl_suffix  */
+#line 313 "maestro.y"
+                      { currentScope->addSymbol(currentName, currentType, "global_var"); }
+#line 1605 "maestro.tab.c"
+    break;
+
+  case 12: /* $@4: %empty  */
+#line 316 "maestro.y"
+                       { currentScope = new SymbolTable("Main Function", currentScope); }
+#line 1611 "maestro.tab.c"
+    break;
+
   case 13: /* finale_block: TOK_MAIN $@4 '{' stmt_list_pure '}'  */
-#line 310 "maestro.y"
+#line 317 "maestro.y"
                            { 
         for (ASTNode* node : *(yyvsp[-1].astList)) if (node) node->evaluate(); // Evaluate Main Block [cite: 1, 48]
         currentScope->printTable(tableFile); currentScope = currentScope->parent; 
     }
-#line 1608 "maestro.tab.c"
-    break;
-
-  case 14: /* stmt_list_pure: stmt_list_pure statement  */
-#line 316 "maestro.y"
-                                         { (yyvsp[-1].astList)->push_back((yyvsp[0].astNode)); (yyval.astList) = (yyvsp[-1].astList); }
-#line 1614 "maestro.tab.c"
-    break;
-
-  case 15: /* stmt_list_pure: %empty  */
-#line 316 "maestro.y"
-                                                                           { (yyval.astList) = new std::vector<ASTNode*>(); }
 #line 1620 "maestro.tab.c"
     break;
 
-  case 16: /* statement: assignment_stmt  */
-#line 319 "maestro.y"
-                      { (yyval.astNode) = (yyvsp[0].astNode); }
+  case 14: /* stmt_list_pure: stmt_list_pure statement  */
+#line 323 "maestro.y"
+                                         { (yyvsp[-1].astList)->push_back((yyvsp[0].astNode)); (yyval.astList) = (yyvsp[-1].astList); }
 #line 1626 "maestro.tab.c"
     break;
 
-  case 17: /* statement: print_stmt  */
-#line 320 "maestro.y"
-                 { (yyval.astNode) = (yyvsp[0].astNode); }
+  case 15: /* stmt_list_pure: %empty  */
+#line 323 "maestro.y"
+                                                                           { (yyval.astList) = new std::vector<ASTNode*>(); }
 #line 1632 "maestro.tab.c"
     break;
 
-  case 18: /* statement: func_call ';'  */
-#line 321 "maestro.y"
-                    { (yyval.astNode) = nullptr; }
+  case 16: /* statement: assignment_stmt  */
+#line 326 "maestro.y"
+                      { (yyval.astNode) = (yyvsp[0].astNode); }
 #line 1638 "maestro.tab.c"
     break;
 
-  case 19: /* statement: control_stmt  */
-#line 322 "maestro.y"
-                   { (yyval.astNode) = nullptr; }
+  case 17: /* statement: print_stmt  */
+#line 327 "maestro.y"
+                 { (yyval.astNode) = (yyvsp[0].astNode); }
 #line 1644 "maestro.tab.c"
     break;
 
-  case 20: /* statement: var_decl  */
-#line 323 "maestro.y"
-               { (yyval.astNode) = nullptr; }
+  case 18: /* statement: func_call ';'  */
+#line 328 "maestro.y"
+                    { (yyval.astNode) = nullptr; }
 #line 1650 "maestro.tab.c"
     break;
 
+  case 19: /* statement: control_stmt  */
+#line 329 "maestro.y"
+                   { (yyval.astNode) = nullptr; }
+#line 1656 "maestro.tab.c"
+    break;
+
+  case 20: /* statement: var_decl  */
+#line 330 "maestro.y"
+               { (yyval.astNode) = nullptr; }
+#line 1662 "maestro.tab.c"
+    break;
+
   case 21: /* statement: TOK_ID TOK_INC ';'  */
-#line 324 "maestro.y"
+#line 331 "maestro.y"
                          { 
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-2].stringValue); 
         
@@ -1661,11 +1673,11 @@ yyreduce:
         opNode->left = idNode; opNode->right = litNode;
         (yyval.astNode)->right = opNode;
     }
-#line 1665 "maestro.tab.c"
+#line 1677 "maestro.tab.c"
     break;
 
   case 22: /* statement: TOK_ID TOK_DEC ';'  */
-#line 335 "maestro.y"
+#line 342 "maestro.y"
                          { 
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-2].stringValue); 
         
@@ -1676,11 +1688,11 @@ yyreduce:
         opNode->left = idNode; opNode->right = litNode;
         (yyval.astNode)->right = opNode;
     }
-#line 1680 "maestro.tab.c"
+#line 1692 "maestro.tab.c"
     break;
 
   case 23: /* statement: TOK_ID TOK_PLUS_ASSIGN expression ';'  */
-#line 346 "maestro.y"
+#line 353 "maestro.y"
                                             {
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
 
@@ -1690,11 +1702,11 @@ yyreduce:
         opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
         (yyval.astNode)->right = opNode;
     }
-#line 1694 "maestro.tab.c"
+#line 1706 "maestro.tab.c"
     break;
 
   case 24: /* statement: TOK_ID TOK_MINUS_ASSIGN expression ';'  */
-#line 356 "maestro.y"
+#line 363 "maestro.y"
                                              {
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
 
@@ -1704,11 +1716,11 @@ yyreduce:
         opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
         (yyval.astNode)->right = opNode;
     }
-#line 1708 "maestro.tab.c"
+#line 1720 "maestro.tab.c"
     break;
 
   case 25: /* statement: TOK_ID TOK_MUL_ASSIGN expression ';'  */
-#line 366 "maestro.y"
+#line 373 "maestro.y"
                                            {
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
 
@@ -1718,11 +1730,11 @@ yyreduce:
         opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
         (yyval.astNode)->right = opNode;
     }
-#line 1722 "maestro.tab.c"
+#line 1734 "maestro.tab.c"
     break;
 
   case 26: /* statement: TOK_ID TOK_DIV_ASSIGN expression ';'  */
-#line 376 "maestro.y"
+#line 383 "maestro.y"
                                            {
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue);
 
@@ -1732,166 +1744,177 @@ yyreduce:
         opNode->left = idNode; opNode->right = (yyvsp[-1].astNode); 
         (yyval.astNode)->right = opNode;
     }
-#line 1736 "maestro.tab.c"
+#line 1748 "maestro.tab.c"
     break;
 
   case 27: /* assignment_stmt: TOK_ID TOK_ASSIGN expression ';'  */
-#line 388 "maestro.y"
+#line 395 "maestro.y"
                                      { 
         (yyval.astNode) = new ASTNode(NODE_ASSIGN); (yyval.astNode)->idName = (yyvsp[-3].stringValue); (yyval.astNode)->right = (yyvsp[-1].astNode); 
     }
-#line 1744 "maestro.tab.c"
+#line 1756 "maestro.tab.c"
     break;
 
   case 28: /* assignment_stmt: TOK_ID '.' TOK_ID TOK_ASSIGN expression ';'  */
-#line 391 "maestro.y"
+#line 398 "maestro.y"
                                                   {
         (yyval.astNode) = new ASTNode(NODE_ASSIGN);
         (yyval.astNode)->idName = std::string((yyvsp[-5].stringValue)) + "." + std::string((yyvsp[-3].stringValue));
         (yyval.astNode)->right = (yyvsp[-1].astNode);
     }
-#line 1754 "maestro.tab.c"
+#line 1766 "maestro.tab.c"
     break;
 
   case 29: /* print_stmt: TOK_PRINT '(' expression ')' ';'  */
-#line 398 "maestro.y"
+#line 405 "maestro.y"
                                              { 
         (yyval.astNode) = new ASTNode(NODE_PRINT); (yyval.astNode)->left = (yyvsp[-2].astNode);
     }
-#line 1762 "maestro.tab.c"
-    break;
-
-  case 30: /* expression: expression '+' expression  */
-#line 403 "maestro.y"
-                              { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "+"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1768 "maestro.tab.c"
-    break;
-
-  case 31: /* expression: expression '-' expression  */
-#line 404 "maestro.y"
-                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "-"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
 #line 1774 "maestro.tab.c"
     break;
 
-  case 32: /* expression: expression '*' expression  */
-#line 405 "maestro.y"
-                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "*"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+  case 30: /* expression: expression '+' expression  */
+#line 410 "maestro.y"
+                              { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "+"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
 #line 1780 "maestro.tab.c"
     break;
 
-  case 33: /* expression: expression '/' expression  */
-#line 406 "maestro.y"
-                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "/"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+  case 31: /* expression: expression '-' expression  */
+#line 411 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "-"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
 #line 1786 "maestro.tab.c"
     break;
 
-  case 34: /* expression: TOK_ID '.' TOK_ID  */
-#line 408 "maestro.y"
+  case 32: /* expression: expression '*' expression  */
+#line 412 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "*"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1792 "maestro.tab.c"
+    break;
+
+  case 33: /* expression: expression '/' expression  */
+#line 413 "maestro.y"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "/"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1798 "maestro.tab.c"
+    break;
+
+  case 34: /* expression: '-' expression  */
+#line 415 "maestro.y"
+                                  { 
+            (yyval.astNode) = new ASTNode(NODE_OP); 
+            (yyval.astNode)->op = "UMINUS";  /* Nume special ca sa stim la evaluare */
+            (yyval.astNode)->left = (yyvsp[0].astNode); 
+            (yyval.astNode)->right = nullptr; 
+        }
+#line 1809 "maestro.tab.c"
+    break;
+
+  case 35: /* expression: TOK_ID '.' TOK_ID  */
+#line 421 "maestro.y"
                         { 
         (yyval.astNode) = new ASTNode(NODE_ID);
         (yyval.astNode)->idName = std::string((yyvsp[-2].stringValue)) + "." + std::string((yyvsp[0].stringValue));
     }
-#line 1795 "maestro.tab.c"
+#line 1818 "maestro.tab.c"
     break;
 
-  case 35: /* expression: expression TOK_EQ expression  */
-#line 413 "maestro.y"
-                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "=="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1801 "maestro.tab.c"
-    break;
-
-  case 36: /* expression: expression TOK_NEQ expression  */
-#line 414 "maestro.y"
-                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "!="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1807 "maestro.tab.c"
-    break;
-
-  case 37: /* expression: expression '<' expression  */
-#line 415 "maestro.y"
-                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1813 "maestro.tab.c"
-    break;
-
-  case 38: /* expression: expression '>' expression  */
-#line 416 "maestro.y"
-                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1819 "maestro.tab.c"
-    break;
-
-  case 39: /* expression: expression TOK_LEQ expression  */
-#line 417 "maestro.y"
-                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1825 "maestro.tab.c"
-    break;
-
-  case 40: /* expression: expression TOK_GEQ expression  */
-#line 418 "maestro.y"
-                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1831 "maestro.tab.c"
-    break;
-
-  case 41: /* expression: expression TOK_AND expression  */
-#line 420 "maestro.y"
-                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "&&"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1837 "maestro.tab.c"
-    break;
-
-  case 42: /* expression: expression TOK_OR expression  */
-#line 421 "maestro.y"
-                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "||"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
-#line 1843 "maestro.tab.c"
-    break;
-
-  case 43: /* expression: LIT_INT  */
-#line 423 "maestro.y"
-              { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "basso"; (yyval.astNode)->literalValue.iVal = atoi((yyvsp[0].stringValue)); }
-#line 1849 "maestro.tab.c"
-    break;
-
-  case 44: /* expression: LIT_FLOAT  */
-#line 424 "maestro.y"
-                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "soprano"; (yyval.astNode)->literalValue.fVal = atof((yyvsp[0].stringValue)); }
-#line 1855 "maestro.tab.c"
-    break;
-
-  case 45: /* expression: LIT_STRING  */
-#line 425 "maestro.y"
-                 { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "libretto"; (yyval.astNode)->literalValue.sVal = (yyvsp[0].stringValue); }
-#line 1861 "maestro.tab.c"
-    break;
-
-  case 46: /* expression: TOK_TRUE  */
+  case 36: /* expression: expression TOK_EQ expression  */
 #line 426 "maestro.y"
-               { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = true; }
-#line 1867 "maestro.tab.c"
+                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "=="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1824 "maestro.tab.c"
     break;
 
-  case 47: /* expression: TOK_FALSE  */
+  case 37: /* expression: expression TOK_NEQ expression  */
 #line 427 "maestro.y"
-                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = false; }
-#line 1873 "maestro.tab.c"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "!="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1830 "maestro.tab.c"
     break;
 
-  case 48: /* expression: TOK_ID  */
+  case 38: /* expression: expression '<' expression  */
 #line 428 "maestro.y"
-             { (yyval.astNode) = new ASTNode(NODE_ID); (yyval.astNode)->idName = (yyvsp[0].stringValue); }
-#line 1879 "maestro.tab.c"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1836 "maestro.tab.c"
     break;
 
-  case 49: /* expression: func_call  */
+  case 39: /* expression: expression '>' expression  */
 #line 429 "maestro.y"
-                { (yyval.astNode) = new ASTNode(NODE_OTHER); (yyval.astNode)->exprType = "unknown"; }
-#line 1885 "maestro.tab.c"
+                                { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1842 "maestro.tab.c"
     break;
 
-  case 50: /* expression: '(' expression ')'  */
+  case 40: /* expression: expression TOK_LEQ expression  */
 #line 430 "maestro.y"
-                         { (yyval.astNode) = (yyvsp[-1].astNode); }
-#line 1891 "maestro.tab.c"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "<="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1848 "maestro.tab.c"
     break;
 
-  case 51: /* func_call: TOK_ID '(' args_list ')'  */
+  case 41: /* expression: expression TOK_GEQ expression  */
+#line 431 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = ">="; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1854 "maestro.tab.c"
+    break;
+
+  case 42: /* expression: expression TOK_AND expression  */
+#line 433 "maestro.y"
+                                    { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "&&"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1860 "maestro.tab.c"
+    break;
+
+  case 43: /* expression: expression TOK_OR expression  */
 #line 434 "maestro.y"
+                                   { (yyval.astNode) = new ASTNode(NODE_OP); (yyval.astNode)->op = "||"; (yyval.astNode)->left = (yyvsp[-2].astNode); (yyval.astNode)->right = (yyvsp[0].astNode); }
+#line 1866 "maestro.tab.c"
+    break;
+
+  case 44: /* expression: LIT_INT  */
+#line 436 "maestro.y"
+              { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "basso"; (yyval.astNode)->literalValue.iVal = atoi((yyvsp[0].stringValue)); }
+#line 1872 "maestro.tab.c"
+    break;
+
+  case 45: /* expression: LIT_FLOAT  */
+#line 437 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "soprano"; (yyval.astNode)->literalValue.fVal = atof((yyvsp[0].stringValue)); }
+#line 1878 "maestro.tab.c"
+    break;
+
+  case 46: /* expression: LIT_STRING  */
+#line 438 "maestro.y"
+                 { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "libretto"; (yyval.astNode)->literalValue.sVal = (yyvsp[0].stringValue); }
+#line 1884 "maestro.tab.c"
+    break;
+
+  case 47: /* expression: TOK_TRUE  */
+#line 439 "maestro.y"
+               { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = true; }
+#line 1890 "maestro.tab.c"
+    break;
+
+  case 48: /* expression: TOK_FALSE  */
+#line 440 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_LITERAL); (yyval.astNode)->literalValue.type = "verita"; (yyval.astNode)->literalValue.bVal = false; }
+#line 1896 "maestro.tab.c"
+    break;
+
+  case 49: /* expression: TOK_ID  */
+#line 441 "maestro.y"
+             { (yyval.astNode) = new ASTNode(NODE_ID); (yyval.astNode)->idName = (yyvsp[0].stringValue); }
+#line 1902 "maestro.tab.c"
+    break;
+
+  case 50: /* expression: func_call  */
+#line 442 "maestro.y"
+                { (yyval.astNode) = new ASTNode(NODE_OTHER); (yyval.astNode)->exprType = "unknown"; }
+#line 1908 "maestro.tab.c"
+    break;
+
+  case 51: /* expression: '(' expression ')'  */
+#line 443 "maestro.y"
+                         { (yyval.astNode) = (yyvsp[-1].astNode); }
+#line 1914 "maestro.tab.c"
+    break;
+
+  case 52: /* func_call: TOK_ID '(' args_list ')'  */
+#line 447 "maestro.y"
                              { 
         (yyval.astNode) = new ASTNode(NODE_OTHER); 
         (yyval.astNode)->idName = (yyvsp[-3].stringValue); 
@@ -1901,11 +1924,11 @@ yyreduce:
             delete (yyvsp[-1].astList);          
         }
     }
-#line 1905 "maestro.tab.c"
+#line 1928 "maestro.tab.c"
     break;
 
-  case 52: /* func_call: TOK_ID '.' TOK_ID '(' args_list ')'  */
-#line 444 "maestro.y"
+  case 53: /* func_call: TOK_ID '.' TOK_ID '(' args_list ')'  */
+#line 457 "maestro.y"
                                           { 
         (yyval.astNode) = new ASTNode(NODE_OTHER); 
         (yyval.astNode)->idName = std::string((yyvsp[-5].stringValue)) + "." + std::string((yyvsp[-3].stringValue)); 
@@ -1915,71 +1938,71 @@ yyreduce:
             delete (yyvsp[-1].astList); 
         }
     }
-#line 1919 "maestro.tab.c"
+#line 1942 "maestro.tab.c"
     break;
 
-  case 53: /* args_list: non_empty_args  */
-#line 455 "maestro.y"
+  case 54: /* args_list: non_empty_args  */
+#line 468 "maestro.y"
                           { (yyval.astList) = (yyvsp[0].astList); }
-#line 1925 "maestro.tab.c"
+#line 1948 "maestro.tab.c"
     break;
 
-  case 54: /* args_list: %empty  */
-#line 456 "maestro.y"
+  case 55: /* args_list: %empty  */
+#line 469 "maestro.y"
       { (yyval.astList) = new std::vector<ASTNode*>(); }
-#line 1931 "maestro.tab.c"
+#line 1954 "maestro.tab.c"
     break;
 
-  case 55: /* non_empty_args: non_empty_args ',' expression  */
-#line 458 "maestro.y"
+  case 56: /* non_empty_args: non_empty_args ',' expression  */
+#line 471 "maestro.y"
                                               { (yyvsp[-2].astList)->push_back((yyvsp[0].astNode)); (yyval.astList) = (yyvsp[-2].astList); }
-#line 1937 "maestro.tab.c"
+#line 1960 "maestro.tab.c"
     break;
 
-  case 56: /* non_empty_args: expression  */
-#line 459 "maestro.y"
+  case 57: /* non_empty_args: expression  */
+#line 472 "maestro.y"
                  { (yyval.astList) = new std::vector<ASTNode*>(); (yyval.astList)->push_back((yyvsp[0].astNode)); }
-#line 1943 "maestro.tab.c"
+#line 1966 "maestro.tab.c"
     break;
 
-  case 59: /* if_stmt: TOK_IF '(' expression ')' block_pure  */
-#line 463 "maestro.y"
+  case 60: /* if_stmt: TOK_IF '(' expression ')' block_pure  */
+#line 476 "maestro.y"
                                               { (yyval.astNode) = nullptr; }
-#line 1949 "maestro.tab.c"
+#line 1972 "maestro.tab.c"
     break;
 
-  case 60: /* while_stmt: TOK_WHILE '(' expression ')' block_pure  */
-#line 465 "maestro.y"
+  case 61: /* while_stmt: TOK_WHILE '(' expression ')' block_pure  */
+#line 478 "maestro.y"
                                                     { (yyval.astNode) = nullptr; }
-#line 1955 "maestro.tab.c"
+#line 1978 "maestro.tab.c"
     break;
 
-  case 61: /* block_pure: '{' stmt_list_pure '}'  */
-#line 467 "maestro.y"
-                                   { (yyval.astList) = (yyvsp[-1].astList); }
-#line 1961 "maestro.tab.c"
-    break;
-
-  case 70: /* non_empty_params: non_empty_params ',' data_type TOK_ID  */
+  case 62: /* block_pure: '{' stmt_list_pure '}'  */
 #line 480 "maestro.y"
+                                   { (yyval.astList) = (yyvsp[-1].astList); }
+#line 1984 "maestro.tab.c"
+    break;
+
+  case 71: /* non_empty_params: non_empty_params ',' data_type TOK_ID  */
+#line 493 "maestro.y"
                                           { 
         currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
         currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
     }
-#line 1970 "maestro.tab.c"
+#line 1993 "maestro.tab.c"
     break;
 
-  case 71: /* non_empty_params: data_type TOK_ID  */
-#line 484 "maestro.y"
+  case 72: /* non_empty_params: data_type TOK_ID  */
+#line 497 "maestro.y"
                      { 
         currentScope->addSymbol((yyvsp[0].stringValue), (yyvsp[-1].stringValue), "parameter"); 
         currentScope->addParamToLastFunction((yyvsp[-1].stringValue)); 
     }
-#line 1979 "maestro.tab.c"
+#line 2002 "maestro.tab.c"
     break;
 
 
-#line 1983 "maestro.tab.c"
+#line 2006 "maestro.tab.c"
 
       default: break;
     }
@@ -2172,7 +2195,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 499 "maestro.y"
+#line 512 "maestro.y"
 
 
 void yyerror(const char *s) { fprintf(stderr, "Error line %d: %s\n", yylineno, s); exit(1); }

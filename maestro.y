@@ -151,6 +151,13 @@ public:
             }
 
             case NODE_OP: {
+                if (op == "UMINUS") {
+                    Value val = left->evaluate();
+                    if (val.type == "basso") val.iVal = -val.iVal;
+                    else if (val.type == "soprano") val.fVal = -val.fVal;
+                    return val;
+                }
+                
                 Value l = left->evaluate(); 
                 Value r = right->evaluate();
                 
@@ -405,6 +412,12 @@ expression:
     | expression '*' expression { $$ = new ASTNode(NODE_OP); $$->op = "*"; $$->left = $1; $$->right = $3; }
     | expression '/' expression { $$ = new ASTNode(NODE_OP); $$->op = "/"; $$->left = $1; $$->right = $3; }
 
+    | '-' expression %prec UMINUS { 
+            $$ = new ASTNode(NODE_OP); 
+            $$->op = "UMINUS";  /* Nume special ca sa stim la evaluare */
+            $$->left = $2; 
+            $$->right = nullptr; 
+        }
     | TOK_ID '.' TOK_ID { 
         $$ = new ASTNode(NODE_ID);
         $$->idName = std::string($1) + "." + std::string($3);

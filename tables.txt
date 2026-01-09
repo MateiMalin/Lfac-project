@@ -1,9 +1,8 @@
 Symbol Table: Main Function
 ____________________________________________
-instrument.greutate	basso	field_instance
-instrument.inaltime	basso	field_instance
 
 Symbol Table: Global Scope
 ____________________________________________
-instrument	Contrabass	global_var
+x	basso	global_var
+y	basso	global_var
 
