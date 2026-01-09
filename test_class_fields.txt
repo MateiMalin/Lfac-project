@@ -17,5 +17,5 @@ finale {
     canta("Greutate instrument:");
     /* Aici ar trebui sa afiseze 20 */
     /* ATENTIE: Asta merge doar daca ai implementat accesul la campuri in evaluate() */
-    // canta(instrument.greutate); 
+    canta(instrument.greutate); 
 }

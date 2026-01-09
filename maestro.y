@@ -57,6 +57,12 @@ class SymbolTable {
             return true; 
         }
 
+        void addParamToLastFunction (std::string paramType) { 
+            if(lastAddedFunction != nullptr) lastAddedFunction->paramTypes.push_back(paramType); 
+            else if (parent != nullptr) parent->addParamToLastFunction(paramType); 
+        }
+
+
         Symbol* findSymbol(std::string name) { 
             if(symbols.find(name) != symbols.end()) return &symbols.at(name); 
             if(parent != nullptr) return parent->findSymbol(name); 
@@ -74,7 +80,6 @@ SymbolTable* globalScope = nullptr;
 SymbolTable* currentScope = nullptr;
 std::ofstream tableFile("tables.txt"); 
 
-// --- TASK IV: AST IMPLEMENTATION ---
 enum NodeType { NODE_LITERAL, NODE_ID, NODE_OP, NODE_ASSIGN, NODE_PRINT, NODE_OTHER };
 
 class ASTNode {
@@ -86,37 +91,53 @@ public:
     std::string exprType;
     ASTNode *left, *right;
 
+    std::vector<ASTNode*> arguments;
+
     ASTNode(NodeType t) : nodeType(t), left(nullptr), right(nullptr) {}
 
-Value evaluate() {
-        Value res;
+    Value evaluate() {
+        Value res; 
+
         switch(nodeType) {
-            case NODE_LITERAL: return literalValue;
+            case NODE_LITERAL: {
+                return literalValue;
+            }
 
             case NODE_ID: {
-                Symbol* s = currentScope->findSymbol(idName);
-                if (!s) {
-                    std::cerr << "Error: Variable '" << idName << "' not declared!\n";
-                    exit(1);
+                Symbol* symbol = currentScope->findSymbol(idName);
+                if(symbol == nullptr) { 
+                    std::cerr << "[EROARE SEMANTICA] Variabila " + idName + " nu este definita!\n";
+                    exit(1); 
                 }
-                return s->value;
+                return symbol->value;
             }
 
             case NODE_ASSIGN: {
-                Value val = right->evaluate();
-                Symbol* s = currentScope->findSymbol(idName);
+                Value val = right->evaluate(); 
+                Symbol* symbol = currentScope->findSymbol(idName); 
                 
-                if (!s) {
-                    std::cerr << "Error: Cannot assign to undeclared variable '" << idName << "'\n";
-                    exit(1);
+                if(symbol == nullptr) {
+                    size_t dotPos = idName.find('.');
+                    if (dotPos != std::string::npos) {
+                        std::string objName = idName.substr(0, dotPos);
+                        if (currentScope->findSymbol(objName) != nullptr) {
+                            currentScope->addSymbol(idName, val.type, "field_instance");
+                            symbol = currentScope->findSymbol(idName);
+                        }
+                    }
                 }
 
-                if (s->type != val.type) {
-                    std::cerr << "Error: Type mismatch. Cannot assign " << val.type << " to " << s->type << "\n";
-                    exit(1);
+                if(symbol == nullptr) { 
+                    std::cerr << "[EROARE SEMANTICA] Variabila " + idName + " nu este definita!\n";
+                    exit(1); 
                 }
 
-                s->value = val; 
+                if(symbol->type != val.type) { 
+                    std::cerr << "[EROARE SEMANTICA] Nu poti atribui un " + val.type + " la o variabila de tip " + symbol->type << "\n";
+                    exit(1); 
+                }
+
+                symbol->value = val; 
                 return val;
             }
 
@@ -133,32 +154,45 @@ Value evaluate() {
                 Value l = left->evaluate(); 
                 Value r = right->evaluate();
                 
-                if (l.type != r.type) {
-                    std::cerr << "Error: Operation '" << op << "' requires operands of the same type.\n";
-                    exit(1);
-                }
-
-                res.type = l.type;
-
                 if (op == "+") {
+                    if (l.type != r.type) {
+                        std::cerr << "[EROARE SEMANTICA] Nu poti aduna " + l.type + " cu " + r.type << "\n";
+                        exit(1);
+                    }
+                    res.type = l.type;
                     if (l.type == "basso") res.iVal = l.iVal + r.iVal;
                     else if (l.type == "soprano") res.fVal = l.fVal + r.fVal;
                 } 
                 else if (op == "-") {
+                    if (l.type != r.type) {
+                        std::cerr << "[EROARE SEMANTICA] Nu poti face scadere intre un " + l.type + " si un " + r.type << "\n";
+                        exit(1);
+                    }
+                    res.type = l.type;
                     if (l.type == "basso") res.iVal = l.iVal - r.iVal;
                     else if (l.type == "soprano") res.fVal = l.fVal - r.fVal;
                 }
                 else if (op == "*") {
+                    if (l.type != r.type) {
+                         std::cerr << "[EROARE SEMANTICA] Nu poti inmulti " + l.type + " cu " + r.type << "\n";
+                         exit(1);
+                    }
+                    res.type = l.type;
                     if (l.type == "basso") res.iVal = l.iVal * r.iVal;
                     else if (l.type == "soprano") res.fVal = l.fVal * r.fVal;
                 }
                 else if (op == "/") {
+                     if (l.type != r.type) {
+                         std::cerr << "[EROARE SEMANTICA] Nu poti imparti " + l.type + " cu " + r.type << "\n";
+                         exit(1);
+                    }
+                    res.type = l.type;
                     if (l.type == "basso") {
-                        if (r.iVal == 0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        if (r.iVal == 0) { std::cerr << "Eroare: Impartire la zero!\n"; exit(1); }
                         res.iVal = l.iVal / r.iVal;
                     }
                     else if (l.type == "soprano") {
-                        if (r.fVal == 0.0) { std::cerr << "Error: Division by zero\n"; exit(1); }
+                        if (r.fVal == 0.0) { std::cerr << "Eroare: Impartire la zero!\n"; exit(1); }
                         res.fVal = l.fVal / r.fVal;
                     }
                 }
@@ -166,32 +200,61 @@ Value evaluate() {
                     res.type = "verita";
                     if (op == "==") {
                         if (l.type == "basso") res.bVal = (l.iVal == r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal == r.fVal);
+                        else res.bVal = (l.fVal == r.fVal);
                     }
                     else if (op == "!=") {
                         if (l.type == "basso") res.bVal = (l.iVal != r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal != r.fVal);
+                        else res.bVal = (l.fVal != r.fVal);
                     }
                     else if (op == "<") {
                         if (l.type == "basso") res.bVal = (l.iVal < r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal < r.fVal);
+                        else res.bVal = (l.fVal < r.fVal);
                     }
                     else if (op == ">") {
                         if (l.type == "basso") res.bVal = (l.iVal > r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal > r.fVal);
+                        else res.bVal = (l.fVal > r.fVal);
                     }
                     else if (op == "<=") {
                         if (l.type == "basso") res.bVal = (l.iVal <= r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal <= r.fVal);
+                        else res.bVal = (l.fVal <= r.fVal);
                     }
                     else if (op == ">=") {
                         if (l.type == "basso") res.bVal = (l.iVal >= r.iVal);
-                        else if (l.type == "soprano") res.bVal = (l.fVal >= r.fVal);
+                        else res.bVal = (l.fVal >= r.fVal);
                     }
                 }
                 return res;
             }
-            case NODE_OTHER: return res;
+
+            case NODE_OTHER: {
+                Symbol* function = currentScope->findSymbol(idName);
+                
+                if(!function) { 
+                    std::cerr << "[EROARE SEMANTICA] Functia " + idName + " nu este definita!\n"; 
+                    exit(1); 
+                }
+
+                if(function->paramTypes.size() != arguments.size()) { 
+                    std::cerr << "[EROARE SINTACTICA] Functia " + idName + " asteapta " 
+                              << std::to_string(function->paramTypes.size()) + " argumente, dar i s-au dat " 
+                              << std::to_string(arguments.size()) << "\n";
+                    exit(1); 
+                }
+
+                for(size_t i = 0; i < arguments.size(); i++) { 
+                    Value argVal = arguments[i]->evaluate();
+
+                    if(function->paramTypes[i] != argVal.type) { 
+                        std::cerr << "[EROARE SINTACTICA] La functia " + idName + " , argumentul " 
+                                  << std::to_string(i + 1) + " trebuie sa fie " + function->paramTypes[i] 
+                                  << ", dar a primti" + argVal.type << "\n";
+                        exit(1);  
+                    }
+                }
+
+                res.type = function->type; 
+                return res;
+            }
         }
         return res;
     }
@@ -371,10 +434,21 @@ func_call:
     TOK_ID '(' args_list ')' { 
         $$ = new ASTNode(NODE_OTHER); 
         $$->idName = $1; 
+
+        if ($3) {
+            $$->arguments = *$3; 
+            delete $3;          
+        }
     }
+
     | TOK_ID '.' TOK_ID '(' args_list ')' { 
         $$ = new ASTNode(NODE_OTHER); 
         $$->idName = std::string($1) + "." + std::string($3); 
+        
+        if ($5) {
+            $$->arguments = *$5; 
+            delete $5; 
+        }
     }
     ;
 
@@ -402,7 +476,16 @@ class_member_suffix: ';' | '(' param_list ')' '{' func_body '}' ;
 
 param_list: non_empty_params | ;
 
-non_empty_params: non_empty_params ',' data_type TOK_ID | data_type TOK_ID ;
+non_empty_params:
+    non_empty_params ',' data_type TOK_ID { 
+        currentScope->addSymbol($4, $3, "parameter"); 
+        currentScope->addParamToLastFunction($3); 
+    } | 
+    data_type TOK_ID { 
+        currentScope->addSymbol($2, $1, "parameter"); 
+        currentScope->addParamToLastFunction($1); 
+    }
+    ; 
 
 func_body: stmt_list_pure ;
 
